@@ -1,9 +1,6 @@
 module SolarFunctions
 
-include("utils.jl")
-include("spa.jl")
-include("clearsky.jl")
-include("atmosphere.jl")
-include("irradiance.jl")
+include("Model.jl")
+include("Interface.jl")
 
 end # module SolarFunctions

@@ -3,7 +3,9 @@ using Dates
 """
     day_angle(datetime::DateTime, offset::Int)
 
-Calculates the day angle [deg] for the Earth's orbit around the Sun. For the Spencer method, `offset=1`; for the ASCE method, `offset=0`.
+Calculates the day angle [deg] for the Earth's orbit around the Sun. 
+
+For the Spencer method, `offset=1`; for the ASCE method, `offset=0`.
 """
 function day_angle(datetime::DateTime, offset::Int)
     doy = dayofyear(datetime)
@@ -11,68 +13,57 @@ function day_angle(datetime::DateTime, offset::Int)
 end
 
 """
-    extraterrestrial_irradiance_spencer1971(
-        day_angle::Real, 
-        solar_constant::Real
-    )
+    extraterrestrial_irradiance_spencer1971(day_angle, solar_constant)
 
-Calculates the extraterrestrial irradiance [W/m^2], as proposed in [spencer1971fourier](@cite), as follows,
+Calculates the extraterrestrial irradiance [W/m^2], as proposed in 
+[spencer1971fourier](@cite).
+
 ```math
-    $VN_EXTRATERRESTRIAL_IRRADIANCE = $VN_SOLAR_CONSTANT(1.00011 + 0.034221\\cos $VN_DAY_ANGLE + 0.00128\\sin $VN_DAY_ANGLE + 
-        0.000719\\cos 2$VN_DAY_ANGLE + 7.7e-05\\sin 2$VN_DAY_ANGLE)
+    \\begin{align*}
+        $VN_EXTRATERRESTRIAL_IRRADIANCE &= $VN_SOLAR_CONSTANT(1.00011 + 0.034221\\cos 
+        $VN_DAY_ANGLE + \\\\
+        & \\quad 0.00128\\sin $VN_DAY_ANGLE + 0.000719\\cos 2$VN_DAY_ANGLE + 
+        7.7e-05\\sin 2$VN_DAY_ANGLE)
+    \\end{align*}
 ```
-where
 - ``$VN_DAY_ANGLE`` corresponds to `day_angle` [deg]
 - ``$VN_SOLAR_CONSTANT`` corresponds to `solar_constant` [W/m^2]
 """
-function extraterrestrial_irradiance_spencer1971(
-    day_angle::Real,
-    solar_constant::Real
-)
+function extraterrestrial_irradiance_spencer1971(day_angle, solar_constant)
     R = 1.00011 + 0.034221cosd(day_angle) + 0.00128sind(day_angle) + 
         0.000719cosd(2day_angle) + 7.7e-05sind(2day_angle)
     return R * solar_constant
 end
 
 """
-    extraterrestrial_irradiance_asce(
-        day_angle::Real,
-        solar_constant::Real
-    )
+    extraterrestrial_irradiance_asce(day_angle, solar_constant)
 
-Calculates the extraterrestrial irradiance using the ASCE evapotranspiration equation [walter2000asce](@cite) as follows
+Calculates the extraterrestrial irradiance using the ASCE evapotranspiration equation 
+[walter2000asce](@cite).
+
 ```math
     $VN_EXTRATERRESTRIAL_IRRADIANCE = $VN_SOLAR_CONSTANT(1 + 0.033\\cos($VN_DAY_ANGLE))
 ```
-where
 - ``$VN_DAY_ANGLE`` corresponds to `day_angle` [deg]
 - ``$VN_SOLAR_CONSTANT`` corresponds to `solar_constant` [W/m^2]
 """
-function extraterrestrial_irradiance_asce(
-    day_angle::Real,
-    solar_constant::Real
-)
+function extraterrestrial_irradiance_asce(day_angle, solar_constant)
     R = 1 + 0.033cosd(day_angle) 
     return R * solar_constant
 end
 
 """
-    extraterrestrial_irradiance_nrel(
-        heliocentric_radius::Real,
-        solar_constant::Real
-    )
+    extraterrestrial_irradiance_nrel(heliocentric_radius, solar_constant)
 
-Calculates the extraterrestrial irradiance using the heliocentric radius [AU], i.e., the Earth-Sun distance, as implemented by the NREL SPA [reda2004solar](@cite), as follows
+Calculates the extraterrestrial irradiance as implemented by the NREL SPA 
+[reda2004solar](@cite). 
+
 ```math
-    $VN_EXTRATERRESTRIAL_IRRADIANCE = $VN_SOLAR_CONSTANT / $VN_HELIOCENTRIC_RADIUS^2
+    $VN_EXTRATERRESTRIAL_IRRADIANCE = \\frac{$VN_SOLAR_CONSTANT}{$VN_HELIOCENTRIC_RADIUS^2}
 ```
-where
-- ``$VN_HELIOCENTRIC_RADIUS`` corresponds to `heliocentric_radius`: [AU]
-- ``$VN_SOLAR_CONSTANT`` corresponds to `solar_constant`: [W/m^2]
+- ``$VN_HELIOCENTRIC_RADIUS`` corresponds to `heliocentric_radius` [AU]
+- ``$VN_SOLAR_CONSTANT`` corresponds to `solar_constant` [W/m^2]
 """
-function extraterrestrial_irradiance_nrel(
-    heliocentric_radius::Real,
-    solar_constant::Real
-)
+function extraterrestrial_irradiance_nrel(heliocentric_radius, solar_constant)
     return solar_constant / heliocentric_radius^2
 end

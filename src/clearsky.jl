@@ -1,34 +1,38 @@
 """
     clearsky_ineichen(
-        sun_apparent_elevation::Real,
-        observer_altitude::Real,
-        absolute_airmass::Real,
-        linke_turbidity::Real,
-        extraterrestial_radiation::Real,
+        sun_apparent_elevation,
+        observer_altitude,
+        absolute_airmass,
+        linke_turbidity,
+        extraterrestial_radiation,
         perez_enhancement::Bool
     )
 
-Implements the Ineichen and Perez clear sky model for global horizontal irradiance (GHI), direct normal irradiance (DNI), and calculates the clear-sky diffuse horizontal (DHI) component as the difference between GHI and DNI*cos(zenith) as presented in [ineichen2002new, perez2002new](@cite). A report on clear sky models found the Ineichen/Perez model to have excellent performance with a minimal input data set [stein2012global](@cite). Default values for monthly Linke turbidity provided by SoDa [sodapro, remund2003worldwide](@cite).
+Returns the global horizontal irradiance (GHI), direct normal irradiance (DNI), and diffuse 
+horizontal (DHI), all in [W/m^2], following the Ineichen/Perez clear sky model 
+[ineichen2002new, perez2002new](@cite).
+
+A report on clear sky models found the Ineichen/Perez model to have excellent performance 
+with a minimal input data set [stein2012global](@cite). 
 
 # Arguments
-- `sun_apparent_elevation::Real` - [deg] Refraction corrected solar elevation angle
-- `observer_altitude::Real` - [m] Altitude above sea level.
-- `absolute_airmass::Real` - Pressure corrected airmass.
-- `linke_turbidity::Real` - Linke Turbidity.
-- `extraterrestial_radiation::Real` - [W/m^2] Extraterrestrial irradiance.
-- `perez_enhancement::Bool` - Controls if the Perez enhancement factor should be applied. Setting to `true` [may produce spurious results](https://github.com/pvlib/pvlib-python/issues/435) for times when the Sun is near the horizon and the airmass is high.
-
-# Returns
-- `dni::Real` - [W/m^2] direct normal irradiance 
-- `dhi::Real` - [W/m^2] direct horizontal irradiance 
-- `ghi::Real` - [W/m^2] global horizoantal irradiance
+- `sun_apparent_elevation` - The apparent (refraction corrected) Sun's 
+    elevation angle. See [`topocentric_apparent_elevation`](@ref).
+- `observer_altitude` - [m] Altitude above sea level. 
+- `absolute_airmass` - Pressure corrected airmass. See [`absolute_airmass`](@ref).
+- `linke_turbidity` - Linke Turbidity. See 
+- `extraterrestial_radiation` - [W/m^2] Extraterrestrial irradiance.
+- `perez_enhancement::Bool` - Controls if the Perez enhancement factor should be applied. 
+    Setting to `true` 
+    [may produce spurious results](https://github.com/pvlib/pvlib-python/issues/435) 
+    for times when the Sun is near the horizon and the airmass is high.
 """
 function clearsky_ineichen(
-    sun_apparent_elevation::Real,
-    observer_altitude::Real,
-    absolute_airmass::Real,
-    linke_turbidity::Real,
-    extraterrestial_radiation::Real,
+    sun_apparent_elevation,
+    observer_altitude,
+    absolute_airmass,
+    linke_turbidity,
+    extraterrestial_radiation,
     perez_enhancement::Bool
 )
     sin_elev = max(sind(sun_apparent_elevation), 0.0)
@@ -69,17 +73,20 @@ function clearsky_ineichen(
 end
 
 """
-    clearsky_haurwitz(sun_apparent_elevation::Real)
+    clearsky_haurwitz(sun_apparent_elevation)
 
-Implements the Haurwitz clear sky model for global horizontal irradiance (GHI) as presented in [haurwitz1945insolation, haurwitz1946insolation](@cite). A report on clear sky models found the Haurwitz model to have the best performance in terms of average monthly error among models which require only the Sun's elevation [stein2012global](@cite).
+Implements the Haurwitz clear sky model for global horizontal irradiance (GHI) as presented 
+in [haurwitz1945insolation, haurwitz1946insolation](@cite). 
+
+A report on clear sky models found the Haurwitz model to have the best performance in terms 
+of average monthly error among models which require only the Sun's elevation 
+[stein2012global](@cite).
 
 # Arguments
-- `sun_apparent_elevation::Real` - [deg] The apparent (refraction corrected) Sun's elevation angle in degrees.
-
-# Returns
-- `ghi::Real` - [W/m^2] The modeled global horizonal irradiance in  provided by the Haurwitz clear-sky model.
+- `sun_apparent_elevation` - The apparent (refraction corrected) Sun's 
+    elevation angle. See [`topocentric_apparent_elevation`](@ref).
 """
-function clearsky_haurwitz(sun_apparent_elevation::Real)
+function clearsky_haurwitz(sun_apparent_elevation)
     sin_elev = sind(sun_apparent_elevation)
     ghi = sin_elev < 0.0 ? 0.0 : 1098.0sin_elev * exp(-0.059/sin_elev)
     return ghi
@@ -87,33 +94,38 @@ end
 
 """
     clearsky_simplified_solis(
-        sun_apparent_elevation::Real,
-        aod700::Real,
-        precipitable_water::Real,
-        pressure::Real,
-        extraterrestial_radiation::Real
+        sun_apparent_elevation,
+        aod700,
+        precipitable_water,
+        pressure,
+        extraterrestial_radiation
     )
 
-Calculate the clear sky GHI, DNI, and DHI according to the simplified Solis model. Reference [ineichen2008broadband](@cite) describes the accuracy of the model as being 15, 20, and 18 W/m^2 for the beam, global, and diffuse components, respectively. Reference [ineichen2016validation](@cite) provides comparisons with other clear sky models.
+Calculate the clear sky direct normal irradiance (DNI), and diffuse horizontal irradiance 
+(DHI) according to the simplified Solis model. 
+
+Reference [ineichen2008broadband](@cite) describes the accuracy of the model as being 15, 
+20, and 18 W/m^2 for the beam, global, and diffuse components, respectively. 
+Reference [ineichen2016validation](@cite) provides comparisons with other clear sky models.
 
 # Arguments
-- `sun_apparent_elevation::Real` - [degrees] The apparent elevation of the sun above the horizon.
-- `aod700::Real` - The aerosol optical depth at 700 nm. Algorithm derived for values between 0 and 0.45.
-- `precipitable_water::Real` - [cm] The precipitable water of the atmosphere. Algorithm derived for values between 0.2 and 10 cm. Values less than 0.2 will be assumed to be equal to 0.2.
-- `pressure::Real` - [Pa] The atmospheric pressure. Algorithm derived for altitudes between sea level and 7000 m, or 101325 and 41000 Pascals.
-- `extraterrestial_radiation::Real` - [W/m^2] Extraterrestrial irradiance. The units of `extraterrestial_radiation` determine the units of the output.
-
-# Returns
-- `dni::Real` - [W/m^2] direct normal irradiance 
-- `dhi::Real` - [W/m^2] direct horizontal irradiance 
-- `ghi::Real` - [W/m^2] global horizoantal irradiance
+- `sun_apparent_elevation` - The apparent (refraction corrected) Sun's 
+    elevation angle. See [`topocentric_apparent_elevation`](@ref).
+- `aod700` - The aerosol optical depth at 700 nm. Algorithm derived for values 
+    between 0 and 0.45.
+- `precipitable_water` - [cm] The precipitable water of the atmosphere. Algorithm 
+    derived for values between 0.2 and 10 cm. Values less than 0.2 will be assumed to be 
+    equal to 0.2.
+- `pressure` - [Pa] The atmospheric pressure. Algorithm derived for altitudes between 
+    sea level and 7000 m, or 101325 and 41000 Pascals.
+- `extraterrestial_radiation` - [W/m^2] Extraterrestrial irradiance.
 """
 function clearsky_simplified_solis(
-    sun_apparent_elevation::Real,
-    aod700::Real,
-    precipitable_water::Real,
-    pressure::Real,
-    extraterrestial_radiation::Real
+    sun_apparent_elevation,
+    aod700,
+    precipitable_water,
+    pressure,
+    extraterrestial_radiation
 )
     # algorithm fails for pw < 0.2
     w = maximum(precipitable_water, 0.2)
@@ -174,3 +186,4 @@ function clearsky_simplified_solis(
     
     return dhi, ghi, dhi
 end
+
