@@ -20,10 +20,10 @@ const ATMOSPHERIC_PRESSURE = 1013.25 # mbar
 const ABSOLUTE_ZERO = 273.15 # kelvin
 
 # Bounds for latitude and longitude
-const LATITUDE_MAX = 90
-const LATITUDE_MIN = -90
-const LONGITUDE_MAX = 180
-const LONGITUDE_MIN = -180 
+const LATITUDE_MAX = 90.0
+const LATITUDE_MIN = -90.0
+const LONGITUDE_MAX = 180.0
+const LONGITUDE_MIN = -180.0
 
 const LATITUDE_RANGE = LATITUDE_MAX - LATITUDE_MIN
 const LONGITUDE_RANGE = LONGITUDE_MAX - LONGITUDE_MIN
@@ -42,23 +42,21 @@ function aod_bb_hulstrom1980(aod380, aod500)
 end
 
 """
-    linke_turbidity_meteotest(
-        observer_latitude,
-        observer_longitude,
-        month_index::Int
-    )
+    linke_turbidity_meteotest(observer_latitude, observer_longitude, month::Int)
 
 Computes the Linke turbidity based on SoDa [sodapro, remund2003worldwide](@cite).
 
 It performs a [bilinear interpolation](https://en.wikipedia.org/wiki/Bilinear_interpolation) 
 of the Linke turbidity array, for the corrsponding `observer_latitude`, 
-`observer_longitude`, and `month_index` values. 
+`observer_longitude`, and `month` values. 
 In such an array, rows represent global latitudes, columns represent global 
 longitudes, and depth (third dimension) represents months of the year.
 """
-function linke_turbidity_meteotest(observer_latitude, observer_longitude, month_index::Int)
-    i = size(lt_data, 1) * (latitude - LATITUDE_MIN) / LATITUDE_RANGE 
-    j = size(lt_data, 2) * (longitude - LONGITUDE_MIN) / LONGITUDE_RANGE 
+function linke_turbidity_meteotest(observer_latitude, observer_longitude, month::Int)
+    i = size(LINKE_TURBIDITY_METEOTEST, 1) * 
+        (observer_latitude - LATITUDE_MIN) / LATITUDE_RANGE
+    j = size(LINKE_TURBIDITY_METEOTEST, 2) * 
+        (observer_longitude - LONGITUDE_MIN) / LONGITUDE_RANGE
 
     i⁻, i⁺ = floor(i) |> Int, ceil(i) |> Int 
     j⁻, j⁺ = floor(j) |> Int, ceil(j) |> Int 
@@ -67,10 +65,10 @@ function linke_turbidity_meteotest(observer_latitude, observer_longitude, month_
     ν, τ = i - i⁻, j - j⁻
 
     # Bilinear interpolation of row-column data
-    lt = ν * τ * LINKE_TURBIDITY_METEOTEST[i⁻, j⁻, month_index] + 
-         ν * (1 - τ) * LINKE_TURBIDITY_METEOTEST[i⁻, j⁺, month_index] + 
-         (1 - ν) * τ * LINKE_TURBIDITY_METEOTEST[i⁺, j⁻, month_index] + 
-         (1 - ν) * (1 - τ) * LINKE_TURBIDITY_METEOTEST[i⁺, j⁺, month_index] 
+    lt = ν * τ * LINKE_TURBIDITY_METEOTEST[i⁻, j⁻, month] + 
+         ν * (1 - τ) * LINKE_TURBIDITY_METEOTEST[i⁻, j⁺, month] + 
+         (1 - ν) * τ * LINKE_TURBIDITY_METEOTEST[i⁺, j⁻, month] + 
+         (1 - ν) * (1 - τ) * LINKE_TURBIDITY_METEOTEST[i⁺, j⁺, month] 
 
     # The values within the Linke turbidity array are scaled by 20
     return lt / 20
@@ -89,23 +87,8 @@ these calculations are only valid for `absolute_airmass` less than 5 and
 `precipitable_water` less than 5 cm.
 """
 function linke_turbidity_kasten1996(absolute_airmass, precipitable_water, aod_bb)
-    # "From numerically integrated spectral simulations done with Modtran
-    # (Berk, 1989), Molineaux (1998) obtained for the broadband optical depth
-    # of a clean and dry atmospshere (fictitious atmosphere that comprises only
-    # the effects of Rayleigh scattering and absorption by the atmosphere gases
-    # other than the water vapor) the following expression"
-    # - P. Ineichen (2008)
     δ_cda = -0.101 + 0.235absolute_airmass^(-0.16)
-    # "and the broadband water vapor optical depth where pwat is the integrated
-    # precipitable water vapor content of the atmosphere expressed in cm and am
-    # the optical air mass. The precision of these fits is better than 1% when
-    # compared with Modtran simulations in the range 1 < am < 5 and
-    # 0 < pwat < 5 cm at sea level" - P. Ineichen (2008)
     δ_w = 0.112absolute_airmass^(-0.55) * precipitable_water^0.34
-    # "Then using the Kasten pyrheliometric formula (1980, 1996), the Linke
-    # turbidity at am = 2 can be written. The extension of the Linke turbidity
-    # coefficient to other values of air mass was published by Ineichen and
-    # Perez (2002)" - P. Ineichen (2008)
     return -(9.4 + 0.9absolute_airmass) * 
             log(exp(-absolute_airmass * (δ_cda + δ_w + aod_bb))) / absolute_airmass
 end
@@ -161,147 +144,180 @@ where  ``$VN_ABSOLUTE_AIRMASS`` is the absolute airmass, ``$VN_RELATIVE_AIRMASS`
 is the atmospheric pressure.
 """
 function absolute_airmass(relative_airmass, pressure)
-    return  relative_airmass * pressure / ATMOSPHERIC_PRESSURE
+    return relative_airmass * pressure / ATMOSPHERIC_PRESSURE
 end
 
+# Relative airmass ------------------------------------------------------------------------
 """
-    relative_airmass_simple(sun_apparent_elevation)
+    relative_airmass_simple(apparent_zenith)
+    relative_airmass_simple(s::SolarPosition)
 
-Computes the relative airmass as negative secant of the Sun's apparent elevation.  
+Computes the relative airmass as secant of the Sun's apparent zenith.
 
 ```math
-$VN_RELATIVE_AIRMASS = -\\sec $VN_TOPOCENTRIC_APPARENT_ELEVATION
+$VN_RELATIVE_AIRMASS = \\sec $VN_TOPOCENTRIC_APPARENT_ZENITH
 ```
 where ``$VN_RELATIVE_AIRMASS`` is the relative airmass and 
-``$VN_TOPOCENTRIC_APPARENT_ELEVATION`` is the Sun's 
-[`topocentric_apparent_elevation`](@ref). Note that this returns `-Inf` at 
-`sun_apparent_elevation=0`.
+``$VN_TOPOCENTRIC_APPARENT_ZENITH`` is the Sun's apparent zenith, i.e., the complementary 
+to 90° of the [`topocentric_apparent_elevation`](@ref).
 """
-function relative_airmass_simple(sun_apparent_elevation)
-    return -secd(sun_apparent_elevation)
+function relative_airmass_simple(apparent_zenith)
+    return secd(apparent_zenith)
 end
 
+relative_airmass_simple(s::SolarPosition) = relative_airmass_simple(s.apparent_zenith)
+
 """
-    relative_airmass_kasten1966(sun_apparent_elevation)
+    relative_airmass_kasten1966(apparent_zenith)
+    relative_airmass_kasten1966(s::SolarPosition)
 
 Computes the relative airmass as proposed in [kasten1965new](@cite).
  
 ```math
-$VN_RELATIVE_AIRMASS = \\frac{1}{-\\cos $VN_TOPOCENTRIC_APPARENT_ELEVATION + 0.15(3.885 + 
-$VN_TOPOCENTRIC_APPARENT_ELEVATION)^{-1.253}}
+    $VN_RELATIVE_AIRMASS = \\frac{1}{\\cos $VN_TOPOCENTRIC_APPARENT_ZENITH + 0.15(93.885 - 
+    $VN_TOPOCENTRIC_APPARENT_ZENITH)^{-1.253})}
 ```
-where ``$VN_TOPOCENTRIC_APPARENT_ELEVATION`` is the Sun's 
-[`topocentric_apparent_elevation`](@ref).
+where ``$VN_TOPOCENTRIC_APPARENT_ZENITH`` is the Sun's apparent_zenith zenith, i.e., 
+the complementary to 90° of the [`topocentric_apparent_elevation`](@ref).
 """
-function relative_airmass_kasten1966(sun_apparent_elevation)
-    e = sun_apparent_elevation
-    return 1.0 / (-cosd(e) + 0.15((3.885 + e)^(-1.253)))
+function relative_airmass_kasten1966(apparent_zenith)
+    return 1.0 / (cosd(apparent_zenith) + 0.15((93.885 - apparent_zenith)^(- 1.253)))
 end
 
+relative_airmass_kasten1966(s::SolarPosition) =
+    relative_airmass_kasten1966(s.apparent_zenith)
+
 """
-    relative_airmass_youngirvine1967(sun_elevation)
+    relative_airmass_youngirvine1967(zenith)
+    relative_airmass_youngirvine1967(s::SolarPosition)
 
 Computes the relative airmass as proposed in [young1967multicolor](@cite).
 
 ```math
-    $VN_RELATIVE_AIRMASS = -\\sec $VN_TOPOCENTRIC_ELEVATION (1 - 0.0012(\\sec 
-    $VN_TOPOCENTRIC_ELEVATION^2 + 1))
+    $VN_RELATIVE_AIRMASS = \\sec $VN_TOPOCENTRIC_ZENITH (1 - 0.0012(
+    \\sec $VN_TOPOCENTRIC_ZENITH^2 - 1))
 ```
-where ``$VN_TOPOCENTRIC_ELEVATION`` is the Sun's [`topocentric_elevation`](@ref).
+where ``$VN_TOPOCENTRIC_ZENITH`` is the Sun's zenith, i.e., the complementary to 90° of the
+[`topocentric_elevation`](@ref).
 """
-function relative_airmass_youngirvine1967(sun_elevation)
-    sec_elev = -secd(sun_elevation)
-    return sec_elev * (1 - 0.0012(sec_elev^2 - 1))
+function relative_airmass_youngirvine1967(zenith)
+    sec_zenith = 1.0 / cosd(zenith)
+    return sec_zenith * (1 - 0.0012(sec_zenith^2 - 1))
 end
 
+relative_airmass_youngirvine1967(s::SolarPosition) = 
+    relative_airmass_youngirvine1967(s.zenith)
+
 """
-    relative_arimass_kastenyoung1989(sun_apparent_elevation)
+    relative_arimass_kastenyoung1989(apparent_zenith)
+    relative_airmass_kastenyoung1989(s::SolarPosition)
 
 Computes the relative airmass as proposed in [kasten1989revised](@cite). 
 
 ```math
-    $VN_RELATIVE_AIRMASS = \\frac{1}{-\\cos $VN_TOPOCENTRIC_APPARENT_ELEVATION + 
-    0.50572((6.07995 + $VN_TOPOCENTRIC_APPARENT_ELEVATION)^{-1.6364})}
+    $VN_RELATIVE_AIRMASS = \\frac{1}{\\cosd $VN_TOPOCENTRIC_APPARENT_ZENITH + 
+    0.50572((96.07995 - $VN_TOPOCENTRIC_APPARENT_ZENITH)^{- 1.6364})}
 ```
-where ``$VN_TOPOCENTRIC_APPARENT_ELEVATION`` is the Sun's 
-[`topocentric_apparent_elevation`](@ref).
+where ``$VN_TOPOCENTRIC_APPARENT_ZENITH`` is the Sun's apparent zenith, i.e., the 
+complementary to 90° of the [`topocentric_apparent_elevation`](@ref).
 """
-function relative_arimass_kastenyoung1989(sun_apparent_elevation)
-    e = sun_apparent_elevation
-    return 1.0 / (-cosd(e) + 0.50572((6.07995 + e)^(-1.6364)))
+function relative_airmass_kastenyoung1989(apparent_zenith)
+    apparent_zenith = min(96.07995, apparent_zenith)
+    return 1.0 / (cosd(apparent_zenith) + 0.50572((96.07995 - apparent_zenith)^(- 1.6364)))
 end
 
+relative_airmass_kastenyoung1989(s::SolarPosition) = 
+    relative_airmass_kastenyoung1989(s.apparent_zenith)
+
 """
-    relative_airmass_gueymard1993(sun_apparent_elevation)
+    relative_airmass_gueymard1993(apparent_zenith)
+    relative_airmass_gueymard1993(s::SolarPosition)
 
 Computes the relative airmass as proposed in 
 [gueymard1993critical, gueymard1993development](@cite).
 
 ```math
-    $VN_RELATIVE_AIRMASS = \\frac{1}{-\\cos $VN_TOPOCENTRIC_APPARENT_ELEVATION + 
-    0.00176759(90 - $VN_TOPOCENTRIC_APPARENT_ELEVATION)((4.37515 + 
-    $VN_TOPOCENTRIC_APPARENT_ELEVATION)^{- 1.21563})}
+    $VN_RELATIVE_AIRMASS = \\frac{1}{\\cos $VN_TOPOCENTRIC_APPARENT_ZENITH 
+    + 0.00176759 $VN_TOPOCENTRIC_APPARENT_ZENITH((94.37515 - 
+    $VN_TOPOCENTRIC_APPARENT_ZENITH)^{-1.21563})}
 ```
-where ``$VN_TOPOCENTRIC_APPARENT_ELEVATION`` is the Sun's 
-[`topocentric_apparent_elevation`](@ref).
+where ``$VN_TOPOCENTRIC_APPARENT_ZENITH`` is the Sun's apparent zenith, i.e., the 
+complementary to 90° of the [`topocentric_apparent_elevation`](@ref).
 """
-function relative_airmass_gueymard1993(sun_apparent_elevation)
-    e = sun_apparent_elevation
-    return 1.0 / (-cosd(e) + 0.00176759(90 - e)*((4.37515 + e)^(- 1.21563)))
+function relative_airmass_gueymard1993(apparent_zenith)
+    return 1.0 / (cosd(apparent_zenith) + 0.00176759apparent_zenith*
+           ((94.37515 - apparent_zenith)^(-1.21563)))
 end
 
+relative_airmass_gueymard1993(s::SolarPosition) =
+    relative_airmass_gueymard1993(s.apparent_zenith)
+
 """
-    relative_airmass_young1994(sun_elevation)
+    relative_airmass_young1994(zenith)
+    relative_airmass_young1994(s::SolarPosition)
 
 Computes the relative airmass as proposed in [young1994air](@cite).
 
 ```math
-    $VN_RELATIVE_AIRMASS = \\frac{1.002432\\cos $VN_TOPOCENTRIC_ELEVATION^2 + 
-    0.148386\\cos $VN_TOPOCENTRIC_ELEVATION + 0.0096467}{\\cos $VN_TOPOCENTRIC_ELEVATION^3 
-    + 0.149864\\cos $VN_TOPOCENTRIC_ELEVATION^2 + 0.0102963\\cos $VN_RELATIVE_AIRMASS 
-    + 0.000303978}
+    $VN_RELATIVE_AIRMASS = \\frac{1.002432\\cos^2 $VN_TOPOCENTRIC_ZENITH + 
+    0.148386\\cos $VN_TOPOCENTRIC_ZENITH + 0.0096467}{\\cos^3 $VN_TOPOCENTRIC_ZENITH + 
+    0.149864\\cos^2 $VN_TOPOCENTRIC_ZENITH + 0.0102963\\cos $VN_TOPOCENTRIC_ZENITH + 
+    0.000303978}
 ```
-where ``$VN_TOPOCENTRIC_ELEVATION`` is the Sun's [`topocentric_elevation`](@ref).
+where ``$VN_TOPOCENTRIC_ZENITH`` is the Sun's zenith, i.e., the 
+complementary to 90° of the [`topocentric_elevation`](@ref).
 """
-function relative_airmass_young1994(sun_elevation)
-    cos_elev = -cosd(sun_elevation)
-    return (1.002432cos_elev^2 + 0.148386cos_elev + 0.0096467) /
-           (cos_elev^3 + 0.149864cos_elev^2 + 0.0102963cos_elev + 0.000303978)
+function relative_airmass_young1994(zenith)
+    return (1.002432cosd(zenith)^2 + 0.148386cosd(zenith) + 0.0096467) /
+           (cosd(zenith_rad)^3 + 0.149864cosd(zenith)^2 + 0.0102963cosd(zenith) + 0.000303978)
 end
 
+relative_airmass_young1994(s::SolarPosition) = 
+    relative_airmass_young1994(s.zenith)
+
 """
-    relative_airmass_pickering2002(sun_apparent_elevation)
+    relative_airmass_pickering2002(apparent_zenith)
+    relative_airmass_pickering2002(s::SolarPosition)
 
 Computes the relative airmass as proposed in [pickering2002southern](@cite).
 
 ```math
-    $VN_RELATIVE_AIRMASS = \\frac{1}{\\sin($VN_TOPOCENTRIC_APPARENT_ELEVATION + 
-    \\frac{244.0}{165 + 47.0$VN_TOPOCENTRIC_APPARENT_ELEVATION^{1.1})}}
+    $VN_RELATIVE_AIRMASS = \\frac{1}{\\sin(90 - $VN_TOPOCENTRIC_APPARENT_ZENITH + 
+    \\frac{244}{165 + 47(90 - $VN_TOPOCENTRIC_APPARENT_ZENITH)^{1.1}})
 ```
-where ``$VN_TOPOCENTRIC_ELEVATION`` is the Sun's [`topocentric_elevation`](@ref).
+where ``$VN_TOPOCENTRIC_APPARENT_ZENITH`` is the Sun's apparent zenith, i.e., the 
+complementary to 90° of the [`topocentric_apparent_elevation`](@ref).
 """
-function relative_airmass_pickering2002(sun_apparent_elevation)
-    e = sun_apparent_elevation
-    return 1.0 / (sind(e + 244.0 / (165 + 47.0e^1.1)))
+function relative_airmass_pickering2002(apparent_zenith)
+    return 1.0 / sin(90 - apparent_zenith + 244.0 / (165 + 47.0(90 - apparent_zenith)^1.1))
 end
 
+relative_airmass_pickering2002(s::SolarPosition) = 
+    relative_airmass_pickering2002(s.apparent_zenith)
+
 """
-    relative_airmass_gueymard2003(sun_apparent_elevation)
+    relative_airmass_gueymard2003(apparent_zenith)
+    relative_airmass_gueymard2003(s::SolarPosition)
 
 Computes the relative airmass as proposed in [gueymard2003direct, gueymard2019clear](@cite). 
 
 ```math
-    $VN_RELATIVE_AIRMASS = -\\cos $VN_TOPOCENTRIC_APPARENT_ELEVATION + \\frac{0.48353(90 - 
-    $VN_TOPOCENTRIC_APPARENT_ELEVATION)^{0.095846}}{(6.741 + 
-    $VN_TOPOCENTRIC_APPARENT_ELEVATION)^{1.754}}
+    $VN_RELATIVE_AIRMASS = \\frac{1}{\\cos $VN_TOPOCENTRIC_APPARENT_ZENITH + 
+    0.48353 $VN_TOPOCENTRIC_APPARENT_ZENITH^{0.095846} / (96.741 - 
+    $VN_TOPOCENTRIC_APPARENT_ZENITH)^{1.754}}
 ```
-where ``$VN_TOPOCENTRIC_ELEVATION`` is the Sun's [`topocentric_elevation`](@ref).
+where ``$VN_TOPOCENTRIC_APPARENT_ZENITH`` is the Sun's apparent zenith, i.e., the 
+complementary to 90° of the [`topocentric_apparent_elevation`](@ref).
 """
 function relative_airmass_gueymard2003(sun_apparent_elevation)
-    e = sun_apparent_elevation
-    return -cosd(e) + 0.48353(90 - e)^0.095846 / (6.741 + e)^1.754
+    return 1.0 / (cosd(apparent_zenith) + 0.48353apparent_zenith^0.095846 / 
+           (96.741 - apparent_zenith)^1.754)
 end
 
+relative_airmass_gueymard2003(s::SolarPosition) =
+    relative_airmass_gueymard2003(s.apparent_zenith)
+
+# Vapor -----------------------------------------------------------------------------------
 """
     apparent_vapor_scale_height_gueymard94(air_temperature)
 
@@ -401,6 +417,7 @@ function vapor_pressure_oke2018(air_temperature)
     return 6.112exp(17.62air_temperature / (243.12 + air_temperature))
 end
 
+# Precipitable water and humidity ---------------------------------------------------------
 """
     precipitable_water_gueymard94(
         saturation_vapor_pressure,
@@ -425,7 +442,7 @@ function precipitable_water_gueymard94(
     saturation_vapor_pressure,
     surface_vapor_density
 )
-    return maximum(0.1saturation_vapor_pressure * surface_vapor_density, 0.1)
+    return max(0.1saturation_vapor_pressure * surface_vapor_density, 0.1)
 end
 
 """
@@ -448,4 +465,3 @@ Computes the relative humidity [%] as proposed in [oke2018guide](@cite).
 function relative_humidity_oke2018(vapor_pressure, saturation_vapor_pressure)
     return 100saturation_vapor_pressure / vapor_pressure
 end
-

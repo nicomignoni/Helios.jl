@@ -1,22 +1,31 @@
-using Documenter, DocumenterCitations, SolarFunctions
+using Documenter, DocumenterCitations, Helios
 
 bib = CitationBibliography(joinpath(@__DIR__, "src", "references.bib"))
 
 makedocs(;
-    sitename="SolarFunctions.jl",
+    sitename="Helios.jl",
     pages = [
         "Home" => "index.md",
-        "API" => "api.md",
+        "Usage" => [
+            "Getting started" => "usage/getting-started.md"
+        ],
+        "API" => [
+            "api/interface.md",
+            "api/spa.md",
+            "api/atmosphere.md",
+            "api/irradiance.md",
+            "api/clearsky.md",
+        ],
         "References" => "references.md"
     ],
     format = Documenter.HTML(
         edit_link="master",
         assets=["assets/favicon.ico"]
     ),
-    repo=Remotes.GitHub("nicomignoni", "SolarFunctions.jl"),
+    repo=Remotes.GitHub("nicomignoni", "Helios.jl"),
     plugins=[bib]
 )
 
 deploydocs(
-    repo = "github.com/nicomignoni/SolarFunctions.jl.git",
+    repo = "github.com/nicomignoni/Helios.jl.git",
 )

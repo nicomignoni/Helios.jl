@@ -8,7 +8,7 @@ end
 mod360(angle) = mod(angle, 360)
 
 """
-    delta_T(datetime::DateTime)
+    delta_T(month::Int, year::Int)
 
 Computes the difference between Terrestrial Dynamical Time (TD) and Universal Time (UT).
 
@@ -18,12 +18,11 @@ It is evaluated as a piecewise polynomial, as per
 for years before `-1999` and after `3000`. Values could be calculated for such intervals, 
 although they are not intended to be used for these years.
 """
-function delta_T(datetime::DateTime)
-    year, month = yearmonth(datetime) 
+function delta_T(month::Int, year::Int)
     y = year + (month - 0.5) / 12
 
     if year < -500
-        return -20 + 32((y - 1820) / 100)^2
+            return -20 + 32((y - 1820) / 100)^2
     elseif -500 <= year < 500
         t = y / 100
         return 10583.6 - 1014.41t + 33.78311t^2 - 5.952053t^3 -
@@ -182,10 +181,7 @@ range. The coefficient matrices in ``\\mathcal{M}`` are collected in
 `SolarFunctions.EARTH_PERIODIC_TERMS.M`. 
 """
 function heliocentric_longitude(julian_ephemeris_millenium)
-    μ = heliocentric_polynomial(
-            julian_ephemeris_millenium,
-            EARTH_PERIODIC_TERMS.M
-        )
+    μ = heliocentric_polynomial(julian_ephemeris_millenium, EARTH_PERIODIC_TERMS.M)
     return μ |> rad2deg |> mod360
 end
 
@@ -215,10 +211,7 @@ The coefficient matrices in ``\\mathcal{L}`` are collected in
 `SolarFunctions.EARTH_PERIODIC_TERMS.L`. 
 """
 function heliocentric_latitude(julian_ephemeris_millenium)
-    λ = heliocentric_polynomial(
-            julian_ephemeris_millenium,
-            EARTH_PERIODIC_TERMS.L
-        )
+    λ = heliocentric_polynomial(julian_ephemeris_millenium, EARTH_PERIODIC_TERMS.L)
     return λ |> rad2deg
 end
 
@@ -247,10 +240,7 @@ The coefficient matrices in ``\\mathcal{R}`` are collected in
 `SolarFunctions.EARTH_PERIODIC_TERMS.R`. 
 """
 function heliocentric_radius(julian_ephemeris_millenium)
-    return heliocentric_polynomial(
-               julian_ephemeris_millenium, 
-               EARTH_PERIODIC_TERMS.R
-           )
+    return heliocentric_polynomial(julian_ephemeris_millenium, EARTH_PERIODIC_TERMS.R)
 end
 
 """
@@ -1028,11 +1018,39 @@ The Sun’s azimuth from the observer’s location relative to a defined referen
 typically true north, on the horizon. 
 
 ```math
-$VN_TOPOCENTRIC_AZIMUTH = $VN_TOPOCENTRIC_ASTRONOMICAL_AZIMUTH + 180 \\mod 360
+    $VN_TOPOCENTRIC_AZIMUTH = $VN_TOPOCENTRIC_ASTRONOMICAL_AZIMUTH + 180 \\mod 360
 ``` 
 where ``$VN_TOPOCENTRIC_ASTRONOMICAL_AZIMUTH`` is the 
 [`topocentric_astronomical_azimuth`](@ref).
 """
 function topocentric_azimuth(topocentric_astronomical_azimuth)
     return mod360(topocentric_astronomical_azimuth + 180)
+end
+
+"""
+    topocentric_sunray_direction(topocentric_azimuth, topocentric_apparent_elevation)
+
+The unit vector defining the direction of the Sun's rays, with respect to an observer on 
+the Earth's surface. Conventionally, it points from the observer towards the Sun 
+[parkin2010solar](@cite). 
+
+```math
+    $VN_SUNRAY = \\begin{bmatrix}
+        \\sin $VN_TOPOCENTRIC_AZIMUTH \\cos $VN_TOPOCENTRIC_APPARENT_ELEVATION \\\\
+        \\cos $VN_TOPOCENTRIC_AZIMUTH \\cos $VN_TOPOCENTRIC_APPARENT_ELEVATION \\\\
+        \\sin $VN_TOPOCENTRIC_APPARENT_ELEVATION
+    \\end{bmatrix}
+```
+where:
+- ``$VN_TOPOCENTRIC_APPARENT_ELEVATION`` corresponds to the 
+    [`topocentric_apparent_elevation`](@ref)
+- ``$VN_TOPOCENTRIC_AZIMUTH`` corresponds to the 
+    [`topocentric_azimuth`](@ref)
+"""
+function topocentric_sunray_direction(topocentric_azimuth, topocentric_apparent_elevation)
+    [
+        sind(topocentric_azimuth) * cosd(topocentric_apparent_elevation)
+        cosd(topocentric_azimuth) * cosd(topocentric_apparent_elevation)
+        sind(topocentric_apparent_elevation)
+    ] 
 end

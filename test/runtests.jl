@@ -1,4 +1,4 @@
-using Test, Dates, SolarFunctions.Interface
+using Test, Dates, Helios
 
 function print_error(name, test, correct)
     println(
@@ -19,7 +19,6 @@ end
     tz = -7
     datetime = DateTime(2003, 10, 17, 12 - tz, 30, 30)
     ΔT = 67
-
 
     correct = (
         julian_day=2452930.312847,
@@ -43,174 +42,127 @@ end
         topocentric_elevation=39.88838
     )
 
-    print_error(
-        "Julian day",
-        Interface.julian_day(datetime=datetime),
-        correct.julian_day
-    )
-    print_error(
-        "Julian century",
-        Interface.julian_ephemeris_day(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.julian_century
+    jd = Helios.Dates.datetime2julian(datetime)
+    jed = Helios.julian_ephemeris_day(jd, ΔT)
+    jc = Helios.julian_century(jd)
+    jec = Helios.julian_ephemeris_century(jed)
+    jem = Helios.julian_ephemeris_millenium(jec)
+
+    hel_lat = Helios.heliocentric_latitude(jem)
+    hel_lon = Helios.heliocentric_longitude(jem)
+    hel_radius = Helios.heliocentric_radius(jem)
+
+    geo_lon = Helios.geocentric_longitude(hel_lon)
+    geo_lat = Helios.geocentric_latitude(hel_lat)
+
+    nut_coeff = Helios.nutation_coefficients(jec)
+    nut_lon = Helios.nutation_longitude(jec, nut_coeff)
+    nut_obl = Helios.nutation_obliquity(jec, nut_coeff)
+
+    mean_ell_obl = Helios.mean_elliptic_obliquity(jem)
+    ell_obl = Helios.elliptic_obliquity(mean_ell_obl, nut_obl)
+    aberr_corr = Helios.aberration_correction(hel_radius)
+
+    app_sun_lon = Helios.apparent_sun_longitude(geo_lon, nut_lon, aberr_corr)
+    geo_sun_asc = Helios.geocentric_sun_ascension(app_sun_lon, ell_obl, geo_lat)
+    geo_sun_dec = Helios.geocentric_sun_declination(app_sun_lon, ell_obl, geo_lat)
+
+    mean_sun_lon = Helios.mean_sun_longitude(jem)
+    mean_sid_gw_time = Helios.mean_sidereal_greenwich_time(jd, jc)
+    app_sid_gw_time = Helios.apparent_sidereal_greenwich_time(
+        mean_sid_gw_time, nut_lon, ell_obl
     )
 
-    print_error(
-        "Heliocentric longitude",
-        Interface.heliocentric_longitude(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.heliocentric_longitude
+    obs_local_hr = Helios.observer_local_hour(
+        longitude, app_sid_gw_time, geo_sun_asc
     )
-    print_error(
-        "Heliocentric latitude",
-        Interface.heliocentric_latitude(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.heliocentric_latitude
+    red_obs_lat = Helios.reduced_observer_latitude(latitude)
+    rad_dist_eq_plane = Helios.radial_distance_equatorial_plane(
+        latitude, altitude, red_obs_lat,
     )
-    print_error(
-        "Heliocentric radius",
-        Interface.heliocentric_radius(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.heliocentric_radius
+
+    rad_dist_rot_axis = Helios.radial_distance_rotational_axis(
+        latitude, altitude, red_obs_lat
     )
-    print_error(
-        "Geocentric longitude",
-        Interface.geocentric_longitude(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.geocentric_longitude
+
+    sun_eq_horiz_px = Helios.sun_equatorial_horizontal_parallax(hel_radius)
+    sun_asc_px = Helios.sun_ascension_parallax(
+        rad_dist_eq_plane, sun_eq_horiz_px, geo_sun_dec, obs_local_hr
     )
-    print_error(
-        "Geocentric latitude",
-        Interface.geocentric_latitude(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.geocentric_latitude
+
+    top_sun_asc = Helios.topocentric_sun_ascension(geo_sun_asc, sun_asc_px)
+    top_local_hr = Helios.topocentric_sun_ascension(obs_local_hr, sun_asc_px)
+    top_sun_dec = Helios.topocentric_sun_declination(
+        rad_dist_eq_plane,
+        rad_dist_rot_axis,
+        sun_eq_horiz_px,
+        geo_sun_dec,
+        obs_local_hr,
+        sun_asc_px,
     )
-    print_error(
-        "Nutation longitude",
-        Interface.nutation_longitude(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.nutation_longitude
+
+    top_app_elev = Helios.topocentric_apparent_elevation(
+        latitude, top_sun_dec, top_local_hr
     )
-    print_error(
-        "Nutation obliquity",
-        Interface.nutation_obliquity(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.nutation_obliquity
+
+    top_elev_corr = Helios.topocentric_elevation_correction(
+        temperature, pressure, top_app_elev
     )
-    print_error(
-        "Elliptic obliquity",
-        Interface.elliptic_obliquity(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.elliptic_obliquity
+
+    top_elev = Helios.topocentric_elevation(top_app_elev, top_elev_corr)
+    top_astr_azimuth = Helios.topocentric_astronomical_azimuth(
+        latitude, top_sun_dec, top_local_hr
     )
-    print_error(
-        "Apparent Sun longitude",
-        Interface.apparent_sun_longitude(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.apparent_sun_longitude
-    )
-    print_error(
-        "Geocentric Sun ascension",
-        Interface.geocentric_sun_ascension(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.geocentric_sun_ascension
-    )
-    print_error(
-        "Geocentric Sun declination",
-        Interface.geocentric_sun_declination(:delta_T, datetime=datetime, delta_T=ΔT),
-        correct.geocentric_sun_declination
-    )
-    print_error(
-        "Obsever hour angle",
-        Interface.observer_local_hour(:delta_T, observer_longitude=longitude, datetime=datetime, delta_T=ΔT),
-        correct.observer_local_hour
-    )
-    print_error(
-        "Topocentric Sun declination",
-        Interface.topocentric_sun_declination(
-            :delta_T,
-            observer_latitude=latitude,
-            observer_altitude=altitude,
-            observer_longitude=longitude,
-            datetime=datetime,
-            delta_T=ΔT
-        ),
-        correct.topocentric_sun_declination
-    )
-    print_error(
-        "Topocentric Sun ascension",
-        Interface.topocentric_sun_ascension(
-            :delta_T,
-            observer_latitude=latitude,
-            observer_longitude=longitude,
-            observer_altitude=altitude,
-            datetime=datetime,
-            delta_T=ΔT
-        ),
-        correct.topocentric_sun_ascension
-    )
-    print_error(
-        "Topocentric hour angle",
-        Interface.topocentric_local_hour(
-            :delta_T,
-            observer_longitude=longitude,
-            observer_latitude=latitude,
-            observer_altitude=altitude,
-            datetime=datetime,
-            delta_T=ΔT
-        ),
-        correct.topicentric_local_hour
-    )
-    print_error(
-        "Topocentric elevation",
-        Interface.topocentric_elevation(
-            :delta_T,
-            observer_longitude=longitude,
-            observer_latitude=latitude,
-            observer_altitude=altitude,
-            temperature=temperature,
-            pressure=pressure,
-            datetime=datetime,
-            delta_T=ΔT
-        ),
-        correct.topocentric_elevation
-    )
-    print_error(
-        "Topocentric azimuth",
-        Interface.topocentric_azimuth(
-            :delta_T,
-            observer_latitude=latitude,
-            observer_longitude=longitude,
-            observer_altitude=altitude,
-            datetime=datetime,
-            delta_T=ΔT
-        ),
-        correct.topocentric_azimuth
-    )
+    top_azimuth = Helios.topocentric_azimuth(top_astr_azimuth)
+
+    print_error("Julian day", jd, correct.julian_day)
+    print_error("Julian century", jc, correct.julian_century)
+    print_error("Heliocentric longitude", hel_lon, correct.heliocentric_longitude)
+    print_error("Heliocentric latitude", hel_lat, correct.heliocentric_latitude)
+    print_error("Heliocentric radius", hel_radius, correct.heliocentric_radius)
+    print_error("Geocentric longitude", geo_lon, correct.geocentric_longitude)
+    print_error("Geocentric latitude", geo_lat, correct.geocentric_latitude)
+    print_error("Nutation longitude", nut_lon, correct.nutation_longitude)
+    print_error("Nutation obliquity", nut_obl, correct.nutation_obliquity)
+    print_error("Elliptic obliquity", ell_obl, correct.elliptic_obliquity)
+    print_error("Apparent Sun longitude", app_sun_lon, correct.apparent_sun_longitude)
+    print_error("Geocentric Sun ascension", geo_sun_asc, correct.geocentric_sun_ascension)
+    print_error("Geocentric Sun declination", geo_sun_dec, correct.geocentric_sun_declination)
+    print_error("Obsever hour angle", obs_local_hr, correct.observer_local_hour)
+    print_error("Topocentric Sun declination", top_sun_dec, correct.topocentric_sun_declination)
+    print_error("Topocentric Sun ascension", top_sun_asc, correct.topocentric_sun_ascension)
+    print_error("Topocentric local hour", top_local_hr, correct.topicentric_local_hour)
+    print_error("Topocentric elevation", top_elev, correct.topocentric_elevation)
+    print_error("Topocentric azimuth", top_azimuth, correct.topocentric_azimuth)
 end
-#
-# @testset "clearsky" begin
-#     sun_apparent_elevation = 30.4
-#     observer_altitude = 0.0
-#     absolute_airmass = 1.0
-#     linke_turbidity = 2.1
-#     extraterrestial_radiation = 1364.0
-#     perez_enanchement = false
-#
-#     correct = (
-#         ineichen=(
-#             dni=1007.606890209482,
-#             dhi=42.47213240572813,
-#             ghi=552.3552398128525,
-#         ),
-#         haurwitz=(
-#             ghi=494.477044,
-#         )
-#     )
-#
-#     # Ineichen
-#     dni, dhi, ghi = Model.clearsky_ineichen(
-#         sun_apparent_elevation,
-#         observer_altitude,
-#         absolute_airmass,
-#         linke_turbidity,
-#         extraterrestial_radiation,
-#         perez_enanchement
-#     )
-#     print_error("Ineichen (DNI)", dni, correct.ineichen.dni)
-#     print_error("Ineichen (DHI)", dhi, correct.ineichen.dhi)
-#     print_error("Ineichen (GHI)", ghi, correct.ineichen.ghi)
-#
-#     # Haurwitz
-#     ghi = Model.clearsky_haurwitz(sun_apparent_elevation)
-#     print_error("Haurwitz (GHI)", ghi, correct.haurwitz.ghi)
-# end
+
+@testset "clearsky" begin
+    sun_apparent_elevation = 30.4
+    observer_altitude = 0.0
+    absolute_airmass = 1.0
+    linke_turbidity = 2.1
+    extraterrestial_radiation = 1364.0
+    perez_enanchement = false
+
+    correct = (
+        ineichen=(dni=1007.606890209482, dhi=42.47213240572813, ghi=552.3552398128525),
+        haurwitz=(ghi=494.477044,)
+    )
+
+    # Ineichen
+    dni, dhi, ghi = Helios.clearsky_ineichen(
+        sun_apparent_elevation,
+        observer_altitude,
+        absolute_airmass,
+        linke_turbidity,
+        extraterrestial_radiation,
+        perez_enanchement
+    )
+    print_error("Ineichen (DNI)", dni, correct.ineichen.dni)
+    print_error("Ineichen (DHI)", dhi, correct.ineichen.dhi)
+    print_error("Ineichen (GHI)", ghi, correct.ineichen.ghi)
+
+    # Haurwitz
+    ghi = Helios.clearsky_haurwitz(sun_apparent_elevation)
+    print_error("Haurwitz (GHI)", ghi, correct.haurwitz.ghi)
+end

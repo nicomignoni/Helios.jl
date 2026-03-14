@@ -2,16 +2,16 @@
 
 <picture>
   <source media="(prefers-color-scheme: light)" srcset="docs/src/assets/logo.svg">
-  <img alt="SolarFunctions logo" src="docs/src/assets/logo.svg" width="20%" height="20%">
+  <img alt="Helios logo" src="docs/src/assets/logo.svg" width="20%" height="20%">
 </picture>
 
 **Julia functions for computing Sun-related quantites.**
 
 </div>
 
-Install `SolarFunctions.jl` from the Julia REPL
+Install `Helios.jl` from the Julia REPL
 ```
-] add https://github.com/nicomignoni/SolarFunctions.jl.git
+] add https://github.com/nicomignoni/Helios.jl.git
 ```
 
-Check out the [docs](https://nicomignoni.github.io/SolarFunctions.jl/dev/) for a quickstart.
+Check out the [docs](https://nicomignoni.github.io/Helios.jl/dev/) for a quickstart.
