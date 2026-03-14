@@ -186,14 +186,14 @@ end
         location::Location, 
         solpos::SolarPosition, 
         datetime::DateTime;
-        func_relative_airmass=relative_airmass_kastenyoung1989,
-        perez_enhancement = false
+        relative_airmass=nothing,
+        perez_enhancement=false
     )
     clearsky_ineichen(
         location::Location, 
         datetime::DateTime;
-        func_relative_airmass=relative_airmass_kastenyoung1989,
-        perez_enhancement = false
+        relative_airmass=nothing,
+        perez_enhancement=false
     )
 
 Computes the DNI, DHI, and GHI irradiance components following the Ineichen model 
@@ -203,11 +203,13 @@ function clearsky_ineichen(
     location::Location, 
     solpos::SolarPosition, 
     datetime::DateTime;
-    func_relative_airmass=relative_airmass_kastenyoung1989,
+    relative_airmass=nothing,
     perez_enhancement=false
 )
-    rel_airmass = func_relative_airmass(solpos)
-    abs_airmass = absolute_airmass(rel_airmass, location.pressure)
+    if relative_airmass === nothing
+        relative_airmass = relative_airmass_kastenyoung1989(solpos)
+    end
+    abs_airmass = absolute_airmass(relative_airmass, location.pressure)
 
     linke_turbidity = linke_turbidity_meteotest(
         location.latitude, location.longitude, month(datetime)
@@ -227,9 +229,20 @@ function clearsky_ineichen(
     return Irradiance(dni, dhi, ghi)
 end
 
-function clearsky_ineichen(location::Location, datetime::DateTime)
+function clearsky_ineichen(
+    location::Location, 
+    datetime::DateTime;
+    relative_airmass=nothing,
+    perez_enhancement=false
+)
     solpos = spa(location, datetime)
-    return clearsky_ineichen(location, solpos, datetime)
+    return clearsky_ineichen(
+            location, 
+            solpos, 
+            datetime; 
+            relative_airmass=relative_airmass, 
+            perez_enhancement=perez_enhancement
+        )
 end
 
 """

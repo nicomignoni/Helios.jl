@@ -1,5 +1,7 @@
 using Dates
 
+const SOLAR_CONSTANT=1366.1 # W/m^2
+
 """
     day_angle(datetime::DateTime, offset::Int)
 
@@ -13,7 +15,7 @@ function day_angle(datetime::DateTime, offset::Int)
 end
 
 """
-    extraterrestrial_irradiance_spencer1971(day_angle, solar_constant)
+    extraterrestrial_irradiance_spencer1971(datetime::DateTime)
 
 Calculates the extraterrestrial irradiance [W/m^2], as proposed in 
 [spencer1971fourier](@cite).
@@ -26,13 +28,11 @@ Calculates the extraterrestrial irradiance [W/m^2], as proposed in
         7.7e-05\\sin 2$VN_DAY_ANGLE)
     \\end{align*}
 ```
-- ``$VN_DAY_ANGLE`` corresponds to `day_angle` [deg]
-- ``$VN_SOLAR_CONSTANT`` corresponds to `solar_constant` [W/m^2]
 """
-function extraterrestrial_irradiance_spencer1971(day_angle, solar_constant)
-    R = 1.00011 + 0.034221cosd(day_angle) + 0.00128sind(day_angle) + 
-        0.000719cosd(2day_angle) + 7.7e-05sind(2day_angle)
-    return R * solar_constant
+function extraterrestrial_irradiance_spencer1971(datetime::DateTime)
+    da = day_angle(datetime, 1.0)
+    R = 1.00011 + 0.034221cosd(da) + 0.00128sind(da) + 0.000719cosd(2da) + 7.7e-05sind(2da)
+    return R * SOLAR_CONSTANT
 end
 
 """
