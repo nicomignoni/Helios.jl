@@ -1054,3 +1054,12 @@ function topocentric_sunray_direction(topocentric_azimuth, topocentric_apparent_
         sind(topocentric_apparent_elevation)
     ] 
 end
+
+"""
+    sunray(solpos::SolarPosition)
+
+The unit vector defining the direction of the Sun's rays.
+"""
+function sunray(solpos::SolarPosition)
+    return topocentric_sunray_direction(solpos.azimuth, solpos.apparent_elevation)
+end

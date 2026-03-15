@@ -137,12 +137,8 @@ end
 end
 
 @testset "clearsky" begin
-    sun_apparent_elevation = 30.4
-    observer_altitude = 0.0
-    absolute_airmass = 1.0
-    linke_turbidity = 2.1
-    extraterrestial_radiation = 1364.0
-    perez_enanchement = false
+    location = Location(0.0, 0.0, 0.0)
+    solpos = SolarPosition(0.0, 0.0, 30.4)
 
     correct = (
         ineichen=(dni=1007.606890209482, dhi=42.47213240572813, ghi=552.3552398128525),
@@ -150,19 +146,20 @@ end
     )
 
     # Ineichen
-    dni, dhi, ghi = Helios.clearsky_ineichen(
-        sun_apparent_elevation,
-        observer_altitude,
-        absolute_airmass,
-        linke_turbidity,
-        extraterrestial_radiation,
-        perez_enanchement
+    irradiance = clearsky_ineichen(
+        location,
+        now(); # not really needed, just a slack argument for this test
+        solpos=solpos,
+        relative_airmass = Helios.ATMOSPHERIC_PRESSURE / location.pressure,
+        linke_turbidity = 2.1,
+        extraterrestial_radiation = 1364.0,
+        perez_enhancement = false
     )
-    print_error("Ineichen (DNI)", dni, correct.ineichen.dni)
-    print_error("Ineichen (DHI)", dhi, correct.ineichen.dhi)
-    print_error("Ineichen (GHI)", ghi, correct.ineichen.ghi)
+    print_error("Ineichen (DNI)", irradiance.dni, correct.ineichen.dni)
+    print_error("Ineichen (DHI)", irradiance.dhi, correct.ineichen.dhi)
+    print_error("Ineichen (GHI)", irradiance.ghi, correct.ineichen.ghi)
 
     # Haurwitz
-    ghi = Helios.clearsky_haurwitz(sun_apparent_elevation)
+    ghi = clearsky_haurwitz(solpos)
     print_error("Haurwitz (GHI)", ghi, correct.haurwitz.ghi)
 end

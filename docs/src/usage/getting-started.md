@@ -32,7 +32,7 @@ irradiance, daylight_times = Irradiance[], DateTime[]
 for dt in time_range
     solpos = spa(location, dt)
     if solpos.apparent_elevation > 0
-        push!(irradiance, clearsky_ineichen(location, solpos, dt))
+        push!(irradiance, clearsky_ineichen(location, dt; solpos=solpos))
         push!(daylight_times, dt)
     end
 end

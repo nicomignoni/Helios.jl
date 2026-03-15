@@ -42,21 +42,21 @@ function aod_bb_hulstrom1980(aod380, aod500)
 end
 
 """
-    linke_turbidity_meteotest(observer_latitude, observer_longitude, month::Int)
+    linke_turbidity_meteotest(location::Location, datetime::DateTime)
 
 Computes the Linke turbidity based on SoDa [sodapro, remund2003worldwide](@cite).
 
 It performs a [bilinear interpolation](https://en.wikipedia.org/wiki/Bilinear_interpolation) 
-of the Linke turbidity array, for the corrsponding `observer_latitude`, 
-`observer_longitude`, and `month` values. 
+of the Linke turbidity array, for the corrsponding latitude, longitude, and month values. 
 In such an array, rows represent global latitudes, columns represent global 
 longitudes, and depth (third dimension) represents months of the year.
 """
-function linke_turbidity_meteotest(observer_latitude, observer_longitude, month::Int)
+function linke_turbidity_meteotest(location::Location, datetime::DateTime)
+    month_index = month(datetime)
     i = size(LINKE_TURBIDITY_METEOTEST, 1) * 
-        (observer_latitude - LATITUDE_MIN) / LATITUDE_RANGE
+        (location.latitude - LATITUDE_MIN) / LATITUDE_RANGE
     j = size(LINKE_TURBIDITY_METEOTEST, 2) * 
-        (observer_longitude - LONGITUDE_MIN) / LONGITUDE_RANGE
+        (location.longitude - LONGITUDE_MIN) / LONGITUDE_RANGE
 
     i⁻, i⁺ = floor(i) |> Int, ceil(i) |> Int 
     j⁻, j⁺ = floor(j) |> Int, ceil(j) |> Int 
@@ -65,10 +65,10 @@ function linke_turbidity_meteotest(observer_latitude, observer_longitude, month:
     ν, τ = i - i⁻, j - j⁻
 
     # Bilinear interpolation of row-column data
-    lt = ν * τ * LINKE_TURBIDITY_METEOTEST[i⁻, j⁻, month] + 
-         ν * (1 - τ) * LINKE_TURBIDITY_METEOTEST[i⁻, j⁺, month] + 
-         (1 - ν) * τ * LINKE_TURBIDITY_METEOTEST[i⁺, j⁻, month] + 
-         (1 - ν) * (1 - τ) * LINKE_TURBIDITY_METEOTEST[i⁺, j⁺, month] 
+    lt = ν * τ * LINKE_TURBIDITY_METEOTEST[i⁻, j⁻, month_index] + 
+         ν * (1 - τ) * LINKE_TURBIDITY_METEOTEST[i⁻, j⁺, month_index] + 
+         (1 - ν) * τ * LINKE_TURBIDITY_METEOTEST[i⁺, j⁻, month_index] + 
+         (1 - ν) * (1 - τ) * LINKE_TURBIDITY_METEOTEST[i⁺, j⁺, month_index] 
 
     # The values within the Linke turbidity array are scaled by 20
     return lt / 20

@@ -1,40 +1,6 @@
 using Dates
 
 """
-Represents a physical geographic location together with ambient conditions.
-"""
-struct Location{T<:Real}
-    latitude::T
-    longitude::T
-    altitude::T
-    temperature::T
-    pressure::T
-end
-
-"""
-    Location(latitude, longitude, altitude, temperature=25.0, pressure=nothing)
-
-Create a `Location` from geographic coordinates and ambient conditions.
-
-# Arguments
-- `latitude`: latitude (degrees)
-- `longitude`: longitude (degrees)
-- `altitude`: altitude above sea level (meters)
-- `temperature`: ambient temperature (°C)
-
-# Keyword
-- `pressure`: ambient pressure; if not provided, it is calculated using
-[`altitude2pressure`](@ref).
-"""
-function Location(latitude, longitude, altitude; temperature = 25.0, pressure = nothing)
-    pressure = pressure === nothing ? altitude2pressure(altitude) : pressure
-    latitude, longitude, altitude, temperature, pressure =
-        promote(latitude, longitude, altitude, temperature, pressure)
-
-    return Location(latitude, longitude, altitude, temperature, pressure)
-end
-
-"""
 Represents the position of the Sun relative to an observer.
 
 # Fields
@@ -60,31 +26,6 @@ end
 
 Base.propertynames(solpos::SolarPosition, private=false) =
     (fieldnames(typeof(solpos))..., :zenith, :apparent_zenith)
-
-"""
-    Irradiance(dni, dhi, ghi)
-
-Container for solar irradiance components.
-
-# Arguments
-- `dni`: Direct Normal Irradiance (W/m²).
-- `dhi`: Diffuse Horizontal Irradiance (W/m²).
-- `ghi`: Global Horizontal Irradiance (W/m²).
-"""
-struct Irradiance{T<:Real}
-    dni::T
-    dhi::T
-    ghi::T
-end
-
-"""
-    sunray(solpos::SolarPosition)
-
-The unit vector defining the direction of the Sun's rays.
-"""
-function sunray(solpos::SolarPosition)
-    return topocentric_sunray_direction(solpos.azimuth, solpos.apparent_elevation)
-end
 
 """
     spa(location::Location, datetime::DateTime)
@@ -179,79 +120,4 @@ function spa(location::Location, datetime::DateTime)
 
     top_azimuth, top_elev, top_app_elev = promote(top_azimuth, top_elev, top_app_elev)
     return SolarPosition(top_azimuth, top_elev, top_app_elev)
-end
-
-"""
-    clearsky_ineichen(
-        location::Location, 
-        solpos::SolarPosition, 
-        datetime::DateTime;
-        relative_airmass=nothing,
-        perez_enhancement=false
-    )
-    clearsky_ineichen(
-        location::Location, 
-        datetime::DateTime;
-        relative_airmass=nothing,
-        perez_enhancement=false
-    )
-
-Computes the DNI, DHI, and GHI irradiance components following the Ineichen model 
-[ineichen2002new, perez2002new]. It is a wrapper for [clearsky_ineichen](@ref).
-"""
-function clearsky_ineichen(
-    location::Location, 
-    solpos::SolarPosition, 
-    datetime::DateTime;
-    relative_airmass=nothing,
-    perez_enhancement=false
-)
-    if relative_airmass === nothing
-        relative_airmass = relative_airmass_kastenyoung1989(solpos)
-    end
-    abs_airmass = absolute_airmass(relative_airmass, location.pressure)
-
-    linke_turbidity = linke_turbidity_meteotest(
-        location.latitude, location.longitude, month(datetime)
-    )
-    extraterrestial_radiation = 1364.0
-
-    dni, dhi, ghi = clearsky_ineichen(
-        solpos.apparent_elevation,
-        location.altitude,
-        abs_airmass,
-        linke_turbidity,
-        extraterrestial_radiation,
-        perez_enhancement
-    )
-
-    dni, dhi, ghi = promote(dni, dhi, ghi)
-    return Irradiance(dni, dhi, ghi)
-end
-
-function clearsky_ineichen(
-    location::Location, 
-    datetime::DateTime;
-    relative_airmass=nothing,
-    perez_enhancement=false
-)
-    solpos = spa(location, datetime)
-    return clearsky_ineichen(
-            location, 
-            solpos, 
-            datetime; 
-            relative_airmass=relative_airmass, 
-            perez_enhancement=perez_enhancement
-        )
-end
-
-"""
-    clearsky_haurwitz(solpos::SolarPosition)
-
-Computes the GHI irradiance component following the Haurwitz model 
-[haurwitz1945insolation, haurwitz1946insolation](@cite). It is a wrapper for 
-[clearsky_haurwitz](@ref).
-"""
-function clearsky_haurwitz(solpos::SolarPosition)
-    return clearsky_haurwitz(solpos.apparent_elevation)
 end

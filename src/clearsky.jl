@@ -1,11 +1,14 @@
+using Dates
+
 """
     clearsky_ineichen(
-        sun_apparent_elevation,
-        observer_altitude,
-        absolute_airmass,
-        linke_turbidity,
-        extraterrestial_radiation,
-        perez_enhancement::Bool
+        location::Location, 
+        datetime::DateTime;
+        solpos::SolarPosition=spa(location, datetime),
+        relative_airmass=relative_airmass_kastenyoung1989(solpos),
+        linke_turbidity=linke_turbidity_meteotest(location, datetime),
+        extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(datetime),
+        perez_enhancement=false,
     )
 
 Returns the global horizontal irradiance (GHI), direct normal irradiance (DNI), and diffuse 
@@ -15,40 +18,35 @@ horizontal (DHI), all in [W/m^2], following the Ineichen/Perez clear sky model
 A report on clear sky models found the Ineichen/Perez model to have excellent performance 
 with a minimal input data set [stein2012global](@cite). 
 
-# Arguments
-- `sun_apparent_elevation` - The apparent (refraction corrected) Sun's 
-    elevation angle. See [`topocentric_apparent_elevation`](@ref).
-- `observer_altitude` - [m] Altitude above sea level. 
-- `absolute_airmass` - Pressure corrected airmass. See [`absolute_airmass`](@ref).
+# Keywords
+- `relative_airmass` - Airmass. See [`absolute_airmass`](@ref).
 - `linke_turbidity` - Linke Turbidity. See 
 - `extraterrestial_radiation` - [W/m^2] Extraterrestrial irradiance.
-- `perez_enhancement::Bool` - Controls if the Perez enhancement factor should be applied. 
-    Setting to `true` 
-    [may produce spurious results](https://github.com/pvlib/pvlib-python/issues/435) 
-    for times when the Sun is near the horizon and the airmass is high.
+- `perez_enhancement::Bool` - Controls wheter the Perez enhancement factor should be applied. 
 """
 function clearsky_ineichen(
-    sun_apparent_elevation,
-    observer_altitude,
-    absolute_airmass,
-    linke_turbidity,
-    extraterrestial_radiation,
-    perez_enhancement::Bool
+    location::Location, 
+    datetime::DateTime;
+    solpos::SolarPosition=spa(location, datetime),
+    relative_airmass=relative_airmass_kastenyoung1989(solpos),
+    linke_turbidity=linke_turbidity_meteotest(location, datetime),
+    extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(datetime),
+    perez_enhancement=false,
 )
-    sin_elev = max(sind(sun_apparent_elevation), 0.0)
-
+    sin_elev = max(sind(solpos.apparent_elevation), 0.0)
     tl = linke_turbidity
 
-    fh1 = exp(-observer_altitude / 8000.0)
-    fh2 = exp(-observer_altitude / 1250.0)
-    cg1 = 5.09e-05observer_altitude + 0.868
-    cg2 = 3.92e-05observer_altitude + 0.0387
+    fh1 = exp(-location.altitude / 8000.0)
+    fh2 = exp(-location.altitude / 1250.0)
+    cg1 = 5.09e-05location.altitude + 0.868
+    cg2 = 3.92e-05location.altitude + 0.0387
 
-    ghi = exp(-cg2 * absolute_airmass * (fh1 + fh2 * (tl - 1)))
+    abs_airmass = absolute_airmass(relative_airmass, location.pressure)
+    ghi = exp(-cg2 * abs_airmass * (fh1 + fh2 * (tl - 1)))
 
     # https://github.com/pvlib/pvlib-python/issues/435
     if perez_enhancement
-        ghi *= exp(0.01absolute_airmass^1.8)
+        ghi *= exp(0.01abs_airmass^1.8)
     end
 
     # use maximum to map airmass nans to 0s. multiply and divide by tl to
@@ -59,7 +57,7 @@ function clearsky_ineichen(
     # See https://github.com/pvlib/pvlib-python/pull/808
     b = 0.664 + 0.163 / fh1
     # BncI = "normal beam clear sky radiation"
-    bnci = b * exp(-0.09absolute_airmass * (tl - 1))
+    bnci = b * exp(-0.09abs_airmass * (tl - 1))
     bnci = extraterrestial_radiation * max(bnci, 0.0)
 
     # "empirical correction" SE 73, 157 & SE 73, 312.
@@ -69,11 +67,11 @@ function clearsky_ineichen(
     dni = min(bnci, bnci_2)
     dhi = ghi - dni * sin_elev
 
-    return dni, dhi, ghi
+    return Irradiance(promote(dni, dhi, ghi)...)
 end
 
 """
-    clearsky_haurwitz(sun_apparent_elevation)
+    clearsky_haurwitz(solpos::SolarPosition)
 
 Implements the Haurwitz clear sky model for global horizontal irradiance (GHI) as presented 
 in [haurwitz1945insolation, haurwitz1946insolation](@cite). 
@@ -86,8 +84,8 @@ of average monthly error among models which require only the Sun's elevation
 - `sun_apparent_elevation` - The apparent (refraction corrected) Sun's 
     elevation angle. See [`topocentric_apparent_elevation`](@ref).
 """
-function clearsky_haurwitz(sun_apparent_elevation)
-    sin_elev = sind(sun_apparent_elevation)
+function clearsky_haurwitz(solpos::SolarPosition)
+    sin_elev = sind(solpos.apparent_elevation)
     ghi = sin_elev < 0.0 ? 0.0 : 1098.0sin_elev * exp(-0.059/sin_elev)
     return ghi
 end
