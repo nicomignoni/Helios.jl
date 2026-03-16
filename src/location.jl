@@ -1,3 +1,11 @@
+using Pkg.Artifacts, Serialization
+
+const ALTITUDE_STEP = 28.0
+const ALTITUDE_MIN = 450.0
+const ALTITUDE_DATA = open(artifact"data/altitude.jld", "r") do io;
+    deserialize(io)
+end
+
 """
 Represents a physical geographic location together with ambient conditions.
 """
@@ -13,24 +21,26 @@ end
     Location(latitude, longitude, altitude)
 
 Create a `Location` from geographic coordinates and ambient conditions.
-
-# Arguments
-- `latitude`: latitude (degrees)
-- `longitude`: longitude (degrees)
-- `altitude`: altitude above sea level (meters)
-
-Ambient pressure is calculated using [`altitude2pressure`](@ref). Default temperature is
-25° (celsius).
 """
 function Location(
     latitude,
-    longitude,
-    altitude;
+    longitude;
+    altitude = altitude(latitude, longitude),
     temperature = 25.0, 
     pressure = altitude2pressure(altitude)
 )
-    latitude, longitude, altitude, temperature, pressure =
-        promote(latitude, longitude, altitude, temperature, pressure)
+    return Location(promote(latitude, longitude, altitude, temperature, pressure)...)
+end
 
-    return Location(latitude, longitude, altitude, temperature, pressure)
+# TODO: embed the 0.0 for no-data directly in ALTITUDE_DATA 
+"""
+        altitude(latitude, longitude)
+
+    Look up location altitude from low-resolution altitude map obtained by aggredating 
+    mutliple open data sources by [Mapzen](https://www.mapzen.com). See 
+    https://github.com/pvlib/pvlib-python/blob/main/pvlib/location.py
+"""
+function altitude(latitude, longitude)
+    alt = interpolated_value(ALTITUDE_DATA, latitude, longitude)
+    return alt ≈ 255.0 ? 0.0 : ALTITUDE_STEP*alt - ALTITUDE_MIN
 end

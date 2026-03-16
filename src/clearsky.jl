@@ -2,12 +2,12 @@ using Dates
 
 """
     clearsky_ineichen(
-        location::Location, 
+        location::Location,
         datetime::DateTime;
-        solpos::SolarPosition=spa(location, datetime),
-        relative_airmass=relative_airmass_kastenyoung1989(solpos),
-        linke_turbidity=linke_turbidity_meteotest(location, datetime),
-        extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(datetime),
+        solpos::SolarPosition,
+        relative_airmass,
+        linke_turbidity,
+        extraterrestial_radiation,
         perez_enhancement=false,
     )
 
@@ -15,14 +15,15 @@ Returns the global horizontal irradiance (GHI), direct normal irradiance (DNI), 
 horizontal (DHI), all in [W/m^2], following the Ineichen/Perez clear sky model 
 [ineichen2002new, perez2002new](@cite).
 
-A report on clear sky models found the Ineichen/Perez model to have excellent performance 
-with a minimal input data set [stein2012global](@cite). 
-
-# Keywords
-- `relative_airmass` - Airmass. See [`absolute_airmass`](@ref).
-- `linke_turbidity` - Linke Turbidity. See 
-- `extraterrestial_radiation` - [W/m^2] Extraterrestrial irradiance.
-- `perez_enhancement::Bool` - Controls wheter the Perez enhancement factor should be applied. 
+# Keyword
+- `solpos`: Solar position. Defaults to `spa(location, datetime)`.
+- `relative_airmass`: Relative airmass. Defaults to
+  [`relative_airmass_kastenyoung1989`](@ref).
+- `linke_turbidity`: Linke turbidity factor. Defaults to
+  [`linke_turbidity_meteotest`](@ref).
+- `extraterrestrial_radiation`: Extraterrestrial irradiance. Defaults to
+  [`extraterrestrial_irradiance_spencer1971`](@ref).
+- `perez_enhancement::Bool=false`: Whether to apply the Perez enhancement factor.
 """
 function clearsky_ineichen(
     location::Location, 
@@ -79,10 +80,6 @@ in [haurwitz1945insolation, haurwitz1946insolation](@cite).
 A report on clear sky models found the Haurwitz model to have the best performance in terms 
 of average monthly error among models which require only the Sun's elevation 
 [stein2012global](@cite).
-
-# Arguments
-- `sun_apparent_elevation` - The apparent (refraction corrected) Sun's 
-    elevation angle. See [`topocentric_apparent_elevation`](@ref).
 """
 function clearsky_haurwitz(solpos::SolarPosition)
     sin_elev = sind(solpos.apparent_elevation)
@@ -92,11 +89,11 @@ end
 
 """
     clearsky_simplified_solis(
-        sun_apparent_elevation,
-        aod700,
-        precipitable_water,
-        pressure,
-        extraterrestial_radiation
+        location::Location,
+        solpos::SolarPosition;
+        aod700=0.1,
+        precipitable_water=1.0,
+        extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(solpos)
     )
 
 Calculate the clear sky direct normal irradiance (DNI), and diffuse horizontal irradiance 
@@ -105,31 +102,18 @@ Calculate the clear sky direct normal irradiance (DNI), and diffuse horizontal i
 Reference [ineichen2008broadband](@cite) describes the accuracy of the model as being 15, 
 20, and 18 W/m^2 for the beam, global, and diffuse components, respectively. 
 Reference [ineichen2016validation](@cite) provides comparisons with other clear sky models.
-
-# Arguments
-- `sun_apparent_elevation` - The apparent (refraction corrected) Sun's 
-    elevation angle. See [`topocentric_apparent_elevation`](@ref).
-- `aod700` - The aerosol optical depth at 700 nm. Algorithm derived for values 
-    between 0 and 0.45.
-- `precipitable_water` - [cm] The precipitable water of the atmosphere. Algorithm 
-    derived for values between 0.2 and 10 cm. Values less than 0.2 will be assumed to be 
-    equal to 0.2.
-- `pressure` - [Pa] The atmospheric pressure. Algorithm derived for altitudes between 
-    sea level and 7000 m, or 101325 and 41000 Pascals.
-- `extraterrestial_radiation` - [W/m^2] Extraterrestrial irradiance.
 """
 function clearsky_simplified_solis(
-    sun_apparent_elevation,
-    aod700,
-    precipitable_water,
-    pressure,
-    extraterrestial_radiation
+    location::Location,
+    solpos::SolarPosition;
+    aod700=0.1,
+    precipitable_water=1.0,
+    extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(solpos)
 )
-    # algorithm fails for pw < 0.2
     w = maximum(precipitable_water, 0.2)
 
     log_w = log(w)
-    log_scaled_p = log(pressure / ATMOSPHERIC_PRESSURE)
+    log_scaled_p = log(location.pressure / ATMOSPHERIC_PRESSURE)
 
     I₀₀ = 1.08w^0.0051
     I₀₁ = 0.97w^0.032
@@ -176,12 +160,11 @@ function clearsky_simplified_solis(
     d = -0.337aod700^2 + 0.63aod700 + 0.116 + dₚ*log_scaled_p
     
     # this prevents the creation of nans at night instead of 0s
-    sin_elev = maximum(1.0e-30, sind(sun_apparent_elevation))
+    sin_elev = maximum(1.0e-30, sind(solpos.apparent_elevation))
     
     dni = I₀ * exp(-τb / sin_elev^b)
     ghi = I₀ * exp(-τg / sin_elev^g) * sin_elev
     dhi = I₀ * exp(-τd / sin_elev^d)
     
-    return dhi, ghi, dhi
+    return Irradiance(promote(dhi, ghi, dhi)...)
 end
-

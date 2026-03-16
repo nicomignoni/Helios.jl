@@ -4,7 +4,7 @@
 using Dates, Plots, Helios
 
 # Create a location and a year-long time range
-location = Location(41.11148, 16.8554, 6) # latitude, longitude, altitude [meters]
+location = Location(41.11148, 16.8554; altitude=6) # latitude, longitude, altitude [meters]
 time_range = let n = now(); n:Day(1):(n + Year(1)); end
 
 # Compute azimuth and apparent elevation for such location and time range

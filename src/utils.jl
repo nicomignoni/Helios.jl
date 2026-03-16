@@ -1,77 +1,26 @@
-# Variable and arguments LaTeX names
-const VN_OBSERVER_LATITUDE = "\\lambda_{\\text{obs}}"
-const VN_OBSERVER_LONGITUDE = "\\mu_{\\text{obs}}"
-const VN_OBSERVER_ALTITUDE = "A_{\\text{obs}}"
-const VN_ALTITUDE = "A"
-const VN_PRESSURE = "P"
-const VN_ATMOSPHERIC_PRESSURE = "P_{\\text{atm}}"
-const VN_TEMPERATURE = "T"
-const VN_DELTA_T = "\\Delta T"
+# Bounds for latitude and longitude
+const LATITUDE_MAX = 90.0
+const LATITUDE_MIN = -90.0
+const LONGITUDE_MAX = 180.0
+const LONGITUDE_MIN = -180.0
 
-const VN_JULIAN_DAY = "J_{\\text{d}}"
-const VN_JULIAN_EPHEMERIS_DAY = "J_{\\text{ed}}"
-const VN_JULIAN_CENTURY = "J_{\\text{c}}"
-const VN_JULIAN_EPHEMERIS_CENTURY = "J_{\\text{ec}}"
-const VN_JULIAN_EPHEMERIS_MILLENIUM = "J_{\\text{em}}"
+const LATITUDE_RANGE = LATITUDE_MAX - LATITUDE_MIN
+const LONGITUDE_RANGE = LONGITUDE_MAX - LONGITUDE_MIN
 
-const VN_HELIOCENTRIC_LONGITUDE = "\\mu_{\\text{hel}}"
-const VN_HELIOCENTRIC_LATITUDE = "\\lambda_{\\text{hel}}"
-const VN_HELIOCENTRIC_RADIUS = "R_{\\text{hel}}"
-const VN_GEOCENTRIC_LONGITUDE = "\\mu_{\\text{geo}}"
-const VN_GEOCENTRIC_LATITUDE = "\\lambda_{\\text{geo}}"
-const VN_GEOCENTRIC_SUN_ASCENSION = "\\sigma_{\\text{geo}}"
-const VN_GEOCENTRIC_SUN_DECLINATION = "\\delta_{\\text{geo}}"
+function interpolated_value(matrix, latitude, longitude, I...)
+    nrows, ncols = size(matrix)
+    lat_ratio = nrows * (latitude - LATITUDE_MIN) / LATITUDE_RANGE
+    lon_ratio = ncols * (longitude - LONGITUDE_MIN) / LONGITUDE_RANGE
 
-const VN_MEAN_MOON_ELONGATION_FROM_SUN = "\\bar{e}_{\\bullet}"
-const VN_MEAN_SUN_ANOMALY = "\\bar{a}_{\\odot}"
-const VN_MEAN_MOON_ANOMALY = "\\bar{a}_{\\bullet}"
-const VN_MOON_LATITUDE_ARGUMENT = "\\lambda_{\\bullet}"
-const VN_ASCENDING_MOON_LONGITUDE = "\\mu_{\\bullet}"
-const VN_NUTATION_LONGITUDE = "\\mu_{\\text{nut}}"
-const VN_NUTATION_OBLIQUITY = "\\omega_{\\text{nut}}"
+    lat_index_up, lat_index_down = Int(ceil(lat_ratio)), Int(floor(lat_ratio))
+    lon_index_up, lon_index_down = Int(ceil(lon_ratio)), Int(floor(lon_ratio))
+    
+    # Index position between rounded row and column as [0, 1] fraction
+    lat_frac, lon_frac = lat_ratio - lat_index_down, lon_ratio - lon_index_down
 
-const VN_MEAN_ELLIPTIC_OBLIQUITY = "\\bar{\\omega}_{\\text{ell}}"
-const VN_ELLIPTIC_OBLIQUITY = "\\omega_{\\text{ell}}"
-
-const VN_ABERRATION_CORRECTION = "\\beta"
-const VN_APPARENT_SUN_LONGITUDE = "\\tilde{\\mu}_{\\odot}"
-const VN_MEAN_SUN_LONGITUDE = "\\bar{\\mu}_{\\odot}"
-const VN_MEAN_SIDEREAL_GREENWICH_TIME = "\\bar{t}_{\\text{gw}}"
-const VN_APPARENT_SIDEREAL_GREENWICH_TIME = "\\tilde{t}_{\\text{gw}}"
-const VN_OBSERVER_LOCAL_HOUR = "h_{\\text{obs}}"
-
-const VN_SUN_EQUATORIAL_HORIZONTAL_PARALLAX = "\\xi_{\\text{hor}}"
-const VN_SUN_ASCENSION_PARALLAX = "\\xi_{\\text{asc}}"
-const VN_REDUCED_OBSERVER_LATITUDE = "\\lambda_{\\text{red}}"
-const VN_RADIAL_DISTANCE_FROM_EQUATORIAL_PLANE = "d_{\\text{eqt}}"
-const VN_RADIAL_DISTANCE_FROM_ROTATIONAL_AXIS = "d_{\\text{rot}}"
-const VN_TOPOCENTRIC_SUN_ASCENSION = "\\sigma_{\\text{top}}"
-const VN_TOPOCENTRIC_LOCAL_HOUR = "h_{\\text{top}}"
-const VN_TOPOCENTRIC_SUN_DECLINATION = "\\delta_{\\text{top}}"
-const VN_TOPOCENTRIC_APPARENT_ELEVATION = "\\tilde{\\eta}_{\\text{top}}"
-const VN_TOPOCENTRIC_APPARENT_ZENITH = "\\tilde{\\zeta}_{\\text{top}}"
-const VN_TOPOCENTRIC_ELEVATION_CORRECTION = "\\hat{\\eta}_{\\text{top}}"
-const VN_TOPOCENTRIC_ELEVATION = "\\eta_{\\text{top}}"
-const VN_TOPOCENTRIC_ZENITH = "\\zeta_{\\text{top}}"
-const VN_TOPOCENTRIC_ASTRONOMICAL_AZIMUTH = "\\alpha_{\\star, \\text{top}}"
-const VN_TOPOCENTRIC_AZIMUTH = "\\alpha_{\\text{top}}"
-
-const VN_DAY_ANGLE = "\\psi_{\\text{day}}"
-const VN_SOLAR_CONSTANT = "S_0"
-const VN_EXTRATERRESTRIAL_IRRADIANCE = "R_{\\text{ext}}"
-
-const VN_ABSOLUTE_AIRMASS = "m_{\\text{air}}"
-const VN_RELATIVE_AIRMASS = "m_{\\text{air, rel}}"
-
-const VN_PRECIPITABLE_WATER = "w_{\\text{prec}}"
-const VN_RELATIVE_HUMIDITY = "u_{\\text{rel}}"
-const VN_AIR_TEMPERATURE = "T_{\\text{air}}" 
-const VN_DEW_TEMPERATURE = "T_{\\text{dew}}"
-const VN_ABSOLUTE_ZERO = "T_0"
-
-const VN_APPARENT_VAPOR_SCALE_HEIGHT = "\\tilde{H}_{\\text{wv}}"
-const VN_SURFACE_VAPOR_DENSITY = "\\rho_{\\text{surf,vap}}"
-const VN_VAPOR_PRESSURE = "P_{\\text{vap}}"
-const VN_SATURATION_VAPOR_PRESSURE = "P_{\\text{sat,vap}}"
-
-const VN_SUNRAY = "\\hat{\\mathbf{s}}"
+    # Bilinear interpolation of row-column data
+    return lat_frac * lon_frac * matrix[lat_index_down, lon_index_down, I...] + 
+           lat_frac * (1 - lon_frac) * matrix[lat_index_down, lon_index_up, I...] + 
+           (1 - lat_frac) * lon_frac * matrix[lat_index_up, lon_index_down, I...] + 
+           (1 - lat_frac) * (1 - lon_frac) * matrix[lat_index_up, lon_index_up, I...] 
+end

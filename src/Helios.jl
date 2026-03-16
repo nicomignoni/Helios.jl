@@ -2,11 +2,10 @@ module Helios
 
 include("utils.jl")
 include("location.jl")
-include("interface.jl")
-include("atmosphere.jl")
-include("spa.jl")
-include("clearsky.jl")
+include("solar_position.jl")
 include("irradiance.jl")
+include("atmosphere.jl")
+include("clearsky.jl")
 
 export Location, Irradiance, SolarPosition, spa, clearsky_ineichen, clearsky_haurwitz
 
