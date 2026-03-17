@@ -5,6 +5,8 @@ const EARTH_PERIODIC_TERMS = open(artifact"data/earth-periodic-terms.jld", "r") 
 end
 
 """
+    SolarPosition(azimuth, elevation, apparent_elevation)
+
 Represents the position of the Sun relative to an observer.
 
 # Fields
@@ -18,18 +20,23 @@ struct SolarPosition{T<:Real}
     apparent_elevation::T
 end
 
-function Base.getproperty(solpos::SolarPosition, s::Symbol)
-    if s === :zenith
-        return 90 - getfield(solpos, :elevation)
-    elseif s === :apparent_zenith 
-        return 90 - getfield(solpos, :apparent_elevation)
-    else
-        return getfield(solpos, s)
-    end
+"""
+    apparent_zenith(solpos::SolarPosition)
+
+The complementary to 90° (degrees) of the Sun's apparent elevation.
+"""
+function apparent_zenith(solpos::SolarPosition)
+    return 90.0 - solpos.apparent_elevation
 end
 
-Base.propertynames(solpos::SolarPosition, private=false) =
-    (fieldnames(typeof(solpos))..., :zenith, :apparent_zenith)
+"""
+    zenith(solpos::SolarPosition)
+
+The complementary to 90° (degrees) of the Sun's elevation.
+"""
+function zenith(solpos::SolarPosition)
+    return 90.0 - solpos.elevation
+end
 
 """
     sunray(solpos::SolarPosition)
@@ -651,10 +658,7 @@ function topocentric_elevation_correction(
 end
 
 """
-    topocentric_elevation(
-        topocentric_apparent_elevation, 
-        topocentric_elevation_correction
-    )
+    topocentric_elevation(topocentric_apparent_elevation, topocentric_elevation_correction)
 
 The angle between the Sun and the observer’s local horizon, measured at the observer’s 
 location. 

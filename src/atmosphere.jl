@@ -115,7 +115,7 @@ end
 Computes the relative airmass as secant of the Sun's apparent zenith.
 """
 function relative_airmass_simple(solpos::SolarPosition)
-    return secd(solpos.apparent_zenith)
+    return secd(apparent_zenith(solpos))
 end
 
 """
@@ -124,8 +124,9 @@ end
 Computes the relative airmass as proposed in [kasten1965new](@cite).
 """
 function relative_airmass_kasten1966(solpos::SolarPosition)
-    return 1.0 / (cosd(solpos.apparent_zenith) + 
-           0.15((93.885 - solpos.apparent_zenith)^(- 1.253)))
+    app_zenith = apparent_zenith(solpos)
+    return 1.0 / (cosd(app_zenith) + 
+           0.15((93.885 - app_zenith)^(- 1.253)))
 end
 
 """
@@ -134,7 +135,7 @@ end
 Computes the relative airmass as proposed in [young1967multicolor](@cite).
 """
 function relative_airmass_youngirvine1967(solpos::SolarPosition)
-    sec_zenith = 1.0 / cosd(solpos.zenith)
+    sec_zenith = 1.0 / cosd(zenith(solpos))
     return sec_zenith * (1 - 0.0012(sec_zenith^2 - 1))
 end
 
@@ -144,9 +145,8 @@ end
 Computes the relative airmass as proposed in [kasten1989revised](@cite). 
 """
 function relative_airmass_kastenyoung1989(solpos::SolarPosition)
-    apparent_zenith = min(96.07995, solpos.apparent_zenith)
-    return 1.0 / (cosd(solpos.apparent_zenith) + 
-           0.50572((96.07995 - solpos.apparent_zenith)^(- 1.6364)))
+    app_zenith = min(96.07995, apparent_zenith(solpos))
+    return 1.0 / (cosd(app_zenith) + 0.50572((96.07995 - app_zenith)^(- 1.6364)))
 end
 
 """
@@ -156,8 +156,9 @@ Computes the relative airmass as proposed in
 [gueymard1993critical, gueymard1993development](@cite).
 """
 function relative_airmass_gueymard1993(solpos::SolarPosition)
-    return 1.0 / (cosd(solpos.apparent_zenith) + 0.00176759solpos.apparent_zenith*
-           ((94.37515 - solpos.apparent_zenith)^(-1.21563)))
+    app_zenith = apparent_zenith(solpos)
+    return 1.0 / (cosd(app_zenith) + 0.00176759app_zenith*
+           ((94.37515 - app_zenith)^(-1.21563)))
 end
 
 """
@@ -166,11 +167,10 @@ end
 Computes the relative airmass as proposed in [young1994air](@cite).
 """
 function relative_airmass_young1994(solpos::SolarPosition)
-    return (1.002432cosd(solpos.zenith)^2 + 
-            0.148386cosd(solpos.zenith) + 0.0096467) /
-           (cosd(solpos.zenith_rad)^3 + 
-            0.149864cosd(solpos.zenith)^2 + 
-            0.0102963cosd(solpos.zenith) + 0.000303978)
+    _zenith = zenith(solpos)
+    return (1.002432cosd(_zenith)^2 + 0.148386cosd(_zenith) + 0.0096467) /
+           (cosd(_zenith)^3 + 0.149864cosd(_zenith)^2 + 
+            0.0102963cosd(_zenith) + 0.000303978)
 end
 
 """
@@ -179,8 +179,8 @@ end
 Computes the relative airmass as proposed in [pickering2002southern](@cite).
 """
 function relative_airmass_pickering2002(solpos::SolarPosition)
-    return 1.0 / sin(90 - solpos.apparent_zenith + 
-           244.0 / (165 + 47.0(90 - solpos.apparent_zenith)^1.1))
+    app_zenith = apparent_zenith(solpos)
+    return 1.0 / sin(90.0 - app_zenith + 244.0 / (165.0 + 47.0(90.0 - app_zenith)^1.1))
 end
 
 """
@@ -189,8 +189,8 @@ end
 Computes the relative airmass as proposed in [gueymard2003direct, gueymard2019clear](@cite). 
 """
 function relative_airmass_gueymard2003(solpos::SolarPosition)
-    return 1.0 / (cosd(solpos.apparent_zenith) + 0.48353solpos.apparent_zenith^0.095846 / 
-           (96.741 - solpos.apparent_zenith)^1.754)
+    app_zenith = apparent_zenith(solpos)
+    return 1.0 / (cosd(app_zenith) + 0.48353app_zenith^0.095846 / (96.741 - app_zenith)^1.754)
 end
 
 # Vapor -----------------------------------------------------------------------------------

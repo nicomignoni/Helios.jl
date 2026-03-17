@@ -7,6 +7,6 @@ include("irradiance.jl")
 include("atmosphere.jl")
 include("clearsky.jl")
 
-export Location, Irradiance, SolarPosition, spa, clearsky_ineichen, clearsky_haurwitz
+export Location, Irradiance, SolarPosition, spa, clearsky_ineichen, clearsky_haurwitz, clearsky_simplified_solis
 
 end # module Helios

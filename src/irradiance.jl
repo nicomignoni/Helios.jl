@@ -7,7 +7,7 @@ const SOLAR_CONSTANT=1366.1 # W/m^2
 
 Container for solar irradiance components.
 
-# Arguments
+# Fields
 - `dni`: Direct Normal Irradiance (W/m²).
 - `dhi`: Diffuse Horizontal Irradiance (W/m²).
 - `ghi`: Global Horizontal Irradiance (W/m²).

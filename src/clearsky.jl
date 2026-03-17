@@ -91,9 +91,9 @@ end
     clearsky_simplified_solis(
         location::Location,
         solpos::SolarPosition;
+        extraterrestial_radiation,
         aod700=0.1,
-        precipitable_water=1.0,
-        extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(solpos)
+        precipitable_water=1.0
     )
 
 Calculate the clear sky direct normal irradiance (DNI), and diffuse horizontal irradiance 
@@ -105,12 +105,13 @@ Reference [ineichen2016validation](@cite) provides comparisons with other clear 
 """
 function clearsky_simplified_solis(
     location::Location,
-    solpos::SolarPosition;
+    datetime::DateTime;
+    solpos::SolarPosition=spa(datetime),
+    extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(datetime),
     aod700=0.1,
     precipitable_water=1.0,
-    extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(solpos)
 )
-    w = maximum(precipitable_water, 0.2)
+    w = max(precipitable_water, 0.2)
 
     log_w = log(w)
     log_scaled_p = log(location.pressure / ATMOSPHERIC_PRESSURE)
@@ -160,7 +161,7 @@ function clearsky_simplified_solis(
     d = -0.337aod700^2 + 0.63aod700 + 0.116 + dₚ*log_scaled_p
     
     # this prevents the creation of nans at night instead of 0s
-    sin_elev = maximum(1.0e-30, sind(solpos.apparent_elevation))
+    sin_elev = max(1.0e-30, sind(solpos.apparent_elevation))
     
     dni = I₀ * exp(-τb / sin_elev^b)
     ghi = I₀ * exp(-τg / sin_elev^g) * sin_elev

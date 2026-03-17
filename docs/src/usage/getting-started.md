@@ -28,18 +28,28 @@ analemma = scatter(
 time_range = let today = DateTime(today()); today:Minute(1):(today + Day(1)); end
 
 # Compute the irradiance for daylight hours
-irradiance, daylight_times = Irradiance[], DateTime[] 
+daylight_times = DateTime[] 
+irradiance = (
+    ineichen = Irradiance[],
+    simplified_solis = Irradiance[]
+)
 for dt in time_range
     solpos = spa(location, dt)
     if solpos.apparent_elevation > 0
-        push!(irradiance, clearsky_ineichen(location, dt; solpos=solpos))
         push!(daylight_times, dt)
+        # using the Ineichen model
+        push!(irradiance.ineichen, clearsky_ineichen(location, dt; solpos=solpos))
+        # and the simplified_solis model
+        push!(irradiance.simplified_solis, clearsky_simplified_solis(location, dt, solpos=solpos))
     end
 end
 
 # and plot its components
-plt = plot(xlabel = "Time", ylabel = "Irradiance [W/m^2]", grid=true, )
-plot!(plt, Time.(daylight_times), getfield.(irradiance, :dni), label="DNI", lw=3)
-plot!(plt, Time.(daylight_times), getfield.(irradiance, :dhi), label="DHI", lw=3)
-plot!(plt, Time.(daylight_times), getfield.(irradiance, :ghi), label="GHI", lw=3)
+plt = plot(xlabel = "Time", ylabel = "Irradiance [W/m^2]", grid=true, layout=(2,1), linx=:x)
+for (c, l) in ((:dni, "DNI"), (:dhi, "DHI"), (:ghi, "GHI"))
+    plot!(plt, Time.(daylight_times), getfield.(irradiance.ineichen, c), label=l, lw=3, subplot=1)
+    plot!(plt, Time.(daylight_times), getfield.(irradiance.simplified_solis, c), label=l, lw=3, subplot=2)
+end
+
+plt
 ```
