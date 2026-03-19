@@ -135,7 +135,7 @@ end
 Computes the relative airmass as proposed in [young1967multicolor](@cite).
 """
 function relative_airmass_youngirvine1967(solpos::SolarPosition)
-    sec_zenith = 1.0 / cosd(zenith(solpos))
+    sec_zenith = secd(zenith(solpos))
     return sec_zenith * (1 - 0.0012(sec_zenith^2 - 1))
 end
 
@@ -167,10 +167,10 @@ end
 Computes the relative airmass as proposed in [young1994air](@cite).
 """
 function relative_airmass_young1994(solpos::SolarPosition)
-    _zenith = zenith(solpos)
-    return (1.002432cosd(_zenith)^2 + 0.148386cosd(_zenith) + 0.0096467) /
-           (cosd(_zenith)^3 + 0.149864cosd(_zenith)^2 + 
-            0.0102963cosd(_zenith) + 0.000303978)
+    cos_zenith = cosd(zenith(solpos))
+    return (1.002432cos_zenith^2 + 0.148386cos_zenith + 0.0096467) /
+           (cosd_zenith^3 + 0.149864cosd_zenith^2 + 
+            0.0102963cosd_zenith + 0.000303978)
 end
 
 """
