@@ -10,9 +10,11 @@ makedocs(;
             "Getting started" => "usage/getting-started.md"
         ],
         "API" => [
+            "api/pv.md",
+            "api/location.md",
             "api/solar_position.md",
-            "api/atmosphere.md",
             "api/irradiance.md",
+            "api/atmosphere.md",
             "api/clearsky.md",
         ],
         "References" => "references.md"

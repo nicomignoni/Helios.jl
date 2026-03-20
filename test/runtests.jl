@@ -137,7 +137,7 @@ end
 end
 
 @testset "clearsky" begin
-    location = Location(0.0, 0.0, 0.0)
+    location = Location(0.0, 0.0, altitude=0.0)
     solpos = SolarPosition(0.0, 0.0, 30.4)
 
     correct = (
@@ -160,6 +160,6 @@ end
     print_error("Ineichen (GHI)", irradiance.ghi, correct.ineichen.ghi)
 
     # Haurwitz
-    ghi = clearsky_haurwitz(solpos)
-    print_error("Haurwitz (GHI)", ghi, correct.haurwitz.ghi)
+    irradiance = clearsky_haurwitz(solpos)
+    print_error("Haurwitz (GHI)", irradiance.ghi, correct.haurwitz.ghi)
 end

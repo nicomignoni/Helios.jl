@@ -1,0 +1,7 @@
+[deps]
+Pluto = "c3e4b0f8-55cb-11ea-2926-15256bba5781"
+Symbolics = "0c5d862f-8b57-4792-8d23-62f2024744c7"
+
+[compat]
+Pluto = "0.20.24"
+Symbolics = "7.16.0"

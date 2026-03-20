@@ -68,7 +68,7 @@ function clearsky_ineichen(
     dni = min(bnci, bnci_2)
     dhi = ghi - dni * sin_elev
 
-    return Irradiance(promote(dni, dhi, ghi)...)
+    return Irradiance(dni, dhi, ghi)
 end
 
 """
@@ -84,7 +84,7 @@ of average monthly error among models which require only the Sun's elevation
 function clearsky_haurwitz(solpos::SolarPosition)
     sin_elev = sind(solpos.apparent_elevation)
     ghi = sin_elev < 0.0 ? 0.0 : 1098.0sin_elev * exp(-0.059/sin_elev)
-    return ghi
+    return Irradiance(0.0, 0.0, ghi)
 end
 
 """
@@ -167,5 +167,5 @@ function clearsky_simplified_solis(
     ghi = I₀ * exp(-τg / sin_elev^g) * sin_elev
     dhi = I₀ * exp(-τd / sin_elev^d)
     
-    return Irradiance(promote(dhi, ghi, dhi)...)
+    return Irradiance(dni, dhi, ghi)
 end

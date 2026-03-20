@@ -7,6 +7,31 @@ const ALTITUDE_DATA = open(artifact"data/altitude.jld", "r") do io;
 end
 
 """
+    ALBEDO
+
+Ground surface albedo, also known as the reflection coefficient, represents the degree
+of reflectivity of the surrounding enviroment [payne1972albedo](@cite).
+"""
+const ALBEDO = (
+    sea = 0.06,
+    urban = 0.18,
+    asphalt = 0.12,
+    concrete = 0.30,
+    soil = 0.17,
+    grass = 0.20,
+    sand = 0.40,
+    snow = 0.65,
+    aluminum = 0.85,
+    copper = 0.74,
+    fresh_grass = 0.26,
+    fresh_snow = 0.75,
+    fresh_steel = 0.35,
+    dirty_steel = 0.08,
+)
+
+"""
+    Location(latitude, longitude, altitude, temperature, pressure)
+
 Represents a physical geographic location together with ambient conditions.
 """
 struct Location{T<:Real}
