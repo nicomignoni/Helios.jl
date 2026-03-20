@@ -1,6 +1,6 @@
 using Dates
 
-const SOLAR_CONSTANT=1366.1 # W/m^2
+const SOLAR_CONSTANT=1366.1 # W/m²
 
 """
     Irradiance(dni, dhi, ghi)
@@ -8,9 +8,9 @@ const SOLAR_CONSTANT=1366.1 # W/m^2
 Container for solar irradiance components.
 
 # Fields
-- `dni`: Direct Normal Irradiance (W/m²).
-- `dhi`: Diffuse Horizontal Irradiance (W/m²).
-- `ghi`: Global Horizontal Irradiance (W/m²).
+- `dni`: Direct Normal Irradiance [W/m²].
+- `dhi`: Diffuse Horizontal Irradiance [W/m²].
+- `ghi`: Global Horizontal Irradiance [W/m²].
 """
 struct Irradiance{T<:Real}
     dni::T
@@ -32,7 +32,7 @@ end
 """
     extraterrestrial_irradiance_spencer1971(datetime::DateTime)
 
-Calculates the extraterrestrial irradiance [W/m^2], as proposed in 
+Calculates the extraterrestrial irradiance [W/m²], as proposed in 
 [spencer1971fourier](@cite).
 """
 function extraterrestrial_irradiance_spencer1971(datetime::DateTime)
@@ -44,7 +44,7 @@ end
 """
     extraterrestrial_irradiance_asce(datetime::DateTime)
 
-Calculates the extraterrestrial irradiance [W/m^2] using the ASCE evapotranspiration 
+Calculates the extraterrestrial irradiance [W/m²] using the ASCE evapotranspiration 
 equation [walter2000asce](@cite).
 """
 function extraterrestrial_irradiance_asce(datetime::DateTime)
@@ -56,9 +56,24 @@ end
 """
     extraterrestrial_irradiance_nrel(heliocentric_radius)
 
-Calculates the extraterrestrial irradiance [W/m^2] as implemented by the NREL SPA 
+Calculates the extraterrestrial irradiance [W/m²] as implemented by the NREL SPA 
 [reda2004solar](@cite). 
 """
 function extraterrestrial_irradiance_nrel(heliocentric_radius)
     return SOLAR_CONSTANT / heliocentric_radius^2
+end
+
+"""
+    angle_of_incidence_projection(p::Panel, solpos::SolarPosition)
+"""
+function angle_of_incidence_projection(p::Panel, solpos::SolarPosition)
+    return cosd(p.roll) * cosd(p.tilt) * sind(solpos.apparent_elevation) +
+           cosd(solpos.apparent_elevation) * sind(solpos.azimuth) * (
+                sind(p.tilt) * sind(p.azimuth) + 
+                cosd(p.azimuth) * cosd(p.tilt) * sind(p.roll)
+           ) +
+           cosd(solpos.azimuth) * cos(solpos.apparent_elevation) * (
+                cosd(p.azimuth) * sin(p.tilt) - 
+                sind(p.azimuth) * cosd(p.tilt) * sind(p.roll)
+           )
 end
