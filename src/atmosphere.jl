@@ -213,7 +213,7 @@ end
         apparent_vapor_scale_height
     )
 
-Computes the surface water vapor density [g/m^3] as proposed in 
+Computes the surface water vapor density [g/m³] as proposed in 
 [gueymard1994analysis; Eq. 2](@cite).
 """
 function surface_vapor_density_gueymard94(

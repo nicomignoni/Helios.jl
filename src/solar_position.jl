@@ -25,18 +25,14 @@ end
 
 The complementary to 90° (degrees) of the Sun's apparent elevation.
 """
-function apparent_zenith(solpos::SolarPosition)
-    return 90.0 - solpos.apparent_elevation
-end
+apparent_zenith(solpos::SolarPosition) = 90.0 - solpos.apparent_elevation
 
 """
     zenith(solpos::SolarPosition)
 
 The complementary to 90° (degrees) of the Sun's elevation.
 """
-function zenith(solpos::SolarPosition)
-    return 90.0 - solpos.elevation
-end
+zenith(solpos::SolarPosition) = 90.0 - solpos.elevation
 
 """
     sunray(solpos::SolarPosition)
@@ -45,13 +41,11 @@ The unit vector defining the direction of the Sun's rays, with respect to an obs
 the Earth's surface. Conventionally, it points from the observer towards the Sun 
 [parkin2010solar](@cite). 
 """
-function sunray(solpos::SolarPosition)
-    [
-        sind(solpos.azimuth) * cosd(solpos.apparent_elevation)
-        cosd(solpos.azimuth) * cosd(solpos.apparent_elevation)
-        sind(solpos.apparent_elevation)
-    ] 
-end
+sunray(azimuth, apparent_elevation) = [
+    sind(solpos.azimuth) * cosd(solpos.apparent_elevation)
+    cosd(solpos.azimuth) * cosd(solpos.apparent_elevation)
+    sind(solpos.apparent_elevation)
+] 
 
 # Limits an angle (in degrees) between 0° and 360°
 mod360(angle) = mod(angle, 360)
@@ -128,9 +122,7 @@ end
 
 A continuous count of days measured in uniform Ephemeris Time (or its successors).
 """ 
-function julian_ephemeris_day(julian_day, ΔT)
-    return julian_day + ΔT / 86400.0
-end
+julian_ephemeris_day(julian_day, ΔT) = julian_day + ΔT / 86400.0
 
 """
     julian_century(julian_day)
@@ -138,9 +130,7 @@ end
 A time interval of exactly 36,525 days (365.25 days × 100) used as a standard unit in 
 astronomy.
 """
-function julian_century(julian_day)
-    return (julian_day - 2451545.0) / 36525.0
-end
+julian_century(julian_day) = (julian_day - 2451545.0) / 36525.0
 
 """
     julian_ephemeris_century(julian_ephemeris_day)
@@ -148,9 +138,7 @@ end
 A 36,525-day interval measured specifically in Ephemeris Time (or its modern dynamical time
 scales) for high-precision astronomical modeling. 
 """
-function julian_ephemeris_century(julian_ephemeris_day)
-    return (julian_ephemeris_day − 2451545.0) / 36525.0
-end
+julian_ephemeris_century(julian_ephemeris_day) = (julian_ephemeris_day − 2451545.0) / 36525.0
 
 """
     julian_ephemeris_millenium(julian_ephemeris_century)
@@ -158,9 +146,7 @@ end
 A 1,000-year interval equal to 365,250 ephemeris days, defined within Ephemeris Time for 
 long-term astronomical calculations. 
 """
-function julian_ephemeris_millenium(julian_ephemeris_century)
-    return julian_ephemeris_century / 10.0
-end
+julian_ephemeris_millenium(julian_ephemeris_century) = julian_ephemeris_century / 10.0
 
 """
     heliocentric_polynomial(julian_ephemeris_millenium, coefficients::AbstractVector)
@@ -224,9 +210,7 @@ end
 A celestial object's angular distance north or south of the ecliptic plane as measured from 
 Earth’s center. 
 """
-function geocentric_latitude(heliocentric_latitude)
-    return -heliocentric_latitude
-end
+geocentric_latitude(heliocentric_latitude) = -heliocentric_latitude
 
 """
     geocentric_sun_ascension(
@@ -343,12 +327,12 @@ function nutation_coefficients(julian_ephemeris_century)
 end
 
 """
-    nutation_longitude(julian_ephemeris_century, nutation_coefficients::AbstractVector)
+    nutation_longitude(julian_ephemeris_century, nutation_coefficients)
 
 The small periodic variation in Earth’s ecliptic longitude caused by gravitational torques 
 from the Moon and Sun. 
 """
-function nutation_longitude(julian_ephemeris_century, nutation_coefficients::AbstractVector)
+function nutation_longitude(julian_ephemeris_century, nutation_coefficients)
     jec = julian_ephemeris_century
     Ψ = EARTH_PERIODIC_TERMS.Ψ
     W = nutation_coefficients
@@ -356,12 +340,12 @@ function nutation_longitude(julian_ephemeris_century, nutation_coefficients::Abs
 end
 
 """
-    nutation_obliquity(julian_ephemeris_century, nutation_coefficients::AbstractVector)
+    nutation_obliquity(julian_ephemeris_century, nutation_coefficients)
 
 The small periodic variation in Earth’s axial tilt (obliquity) resulting from 
 gravitational perturbations. 
 """
-function nutation_obliquity(julian_ephemeris_century, nutation_coefficients::AbstractVector)
+function nutation_obliquity(julian_ephemeris_century, nutation_coefficients)
     jec = julian_ephemeris_century
     E = EARTH_PERIODIC_TERMS.E
     W = nutation_coefficients
@@ -396,9 +380,7 @@ end
 An adjustment applied to celestial coordinates to account for the apparent displacement 
 caused by Earth’s motion through space. 
 """
-function aberration_correction(heliocentric_radius)
-    return -20.4898 / (3600.0heliocentric_radius)
-end
+aberration_correction(heliocentric_radius) = -20.4898 / (3600.0heliocentric_radius)
 
 """
     apparent_sun_longitude(geocentric_longitude, nutation_longitude, aberration_correction)
@@ -486,9 +468,7 @@ The angle whose tangent equals the tangent of the geodetic latitude scaled by Ea
 polar-to-equatorial radius ratio, representing the point’s projection onto the surface of 
 the reference ellipsoid. 
 """
-function reduced_observer_latitude(observer_latitude)
-    return atand(0.99664719 * tand(observer_latitude))
-end
+reduced_observer_latitude(observer_latitude) = atand(0.99664719 * tand(observer_latitude))
 
 """
     radial_distance_equatorial_plane(

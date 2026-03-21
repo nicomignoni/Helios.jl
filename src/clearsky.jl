@@ -15,7 +15,7 @@ Returns the global horizontal irradiance (GHI), direct normal irradiance (DNI), 
 horizontal (DHI), all in [W/m^2], following the Ineichen/Perez clear sky model 
 [ineichen2002new, perez2002new](@cite).
 
-# Keyword
+# Keywords
 - `solpos`: Solar position. Defaults to `spa(location, datetime)`.
 - `relative_airmass`: Relative airmass. Defaults to
   [`relative_airmass_kastenyoung1989`](@ref).
@@ -81,10 +81,10 @@ A report on clear sky models found the Haurwitz model to have the best performan
 of average monthly error among models which require only the Sun's elevation 
 [stein2012global](@cite).
 """
-function clearsky_haurwitz(solpos::SolarPosition)
+clearsky_haurwitz(solpos::SolarPosition) = begin
     sin_elev = sind(solpos.apparent_elevation)
     ghi = sin_elev < 0.0 ? 0.0 : 1098.0sin_elev * exp(-0.059/sin_elev)
-    return Irradiance(0.0, 0.0, ghi)
+    Irradiance(0.0, 0.0, ghi)
 end
 
 """

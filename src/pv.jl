@@ -1,25 +1,14 @@
-using StaticArrays
+"""
+    surface_normal(surface_tilt, surface_roll, surface_azimuth)
 
-mutable struct Panel{T}
-    size::SVector{2, T}
-    pos::SVector{3, T}
-    tilt::T
-    roll::T
-    azimuth::T
-end
-
-function Panel(size; pos=zeros(SVector{3}), tilt=0.0, roll=0.0, azimuth=180.0)
-    Panel(size, pos, tilt, roll, azimuth)
-end
-
-function area(p::Panel)
-    prod(p.size) 
-end
-
-function normal(p::Panel)
+Computes the normal (unit) vector of the oriented surface.
+"""
+function surface_normal(surface_tilt, surface_roll, surface_azimuth)
     [
-        sind(p.tilt) * sind(p.azimuth) + cosd(p.tilt) * cosd(p.azimuth) * sind(p.roll),
-        sind(p.tilt) * cosd(p.azimuth) - cosd(p.tilt) * sind(p.azimuth) * sind(p.roll),
-        cosd(p.tilt) * cosd(p.roll)
+        sind(surface_tilt) * sind(surface_azimuth) + 
+            cosd(surface_tilt) * cosd(surface_azimuth) * sind(surface_roll),
+        sind(surface_tilt) * cosd(surface_azimuth) - 
+            cosd(surface_tilt) * sind(surface_azimuth) * sind(surface_roll),
+        cosd(surface_tilt) * cosd(surface_roll)
     ]
 end
