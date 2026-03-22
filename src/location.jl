@@ -2,7 +2,7 @@ using Pkg.Artifacts, Serialization
 
 const ALTITUDE_STEP = 28.0
 const ALTITUDE_MIN = 450.0
-const ALTITUDE_DATA = open(artifact"data/altitude.jld", "r") do io;
+const ALTITUDE_DATA = open(artifact"data/altitude.jld", "r") do io
     deserialize(io)
 end
 

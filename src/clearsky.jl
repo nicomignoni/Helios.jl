@@ -26,13 +26,13 @@ horizontal (DHI), all in [W/m^2], following the Ineichen/Perez clear sky model
 - `perez_enhancement::Bool=false`: Whether to apply the Perez enhancement factor.
 """
 function clearsky_ineichen(
-    location::Location, 
+    location::Location,
     datetime::DateTime;
-    solpos::SolarPosition=spa(location, datetime),
-    relative_airmass=relative_airmass_kastenyoung1989(solpos),
-    linke_turbidity=linke_turbidity_meteotest(location, datetime),
-    extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(datetime),
-    perez_enhancement=false,
+    solpos::SolarPosition = spa(location, datetime),
+    relative_airmass = relative_airmass_kastenyoung1989(solpos),
+    linke_turbidity = linke_turbidity_meteotest(location, datetime),
+    extraterrestial_radiation = extraterrestrial_irradiance_spencer1971(datetime),
+    perez_enhancement = false,
 )
     sin_elev = max(sind(solpos.apparent_elevation), 0.0)
     tl = linke_turbidity
@@ -81,7 +81,7 @@ A report on clear sky models found the Haurwitz model to have the best performan
 of average monthly error among models which require only the Sun's elevation 
 [stein2012global](@cite).
 """
-clearsky_haurwitz(solpos::SolarPosition) = begin
+function clearsky_haurwitz(solpos::SolarPosition)
     sin_elev = sind(solpos.apparent_elevation)
     ghi = sin_elev < 0.0 ? 0.0 : 1098.0sin_elev * exp(-0.059/sin_elev)
     Irradiance(0.0, 0.0, ghi)
@@ -106,10 +106,10 @@ Reference [ineichen2016validation](@cite) provides comparisons with other clear 
 function clearsky_simplified_solis(
     location::Location,
     datetime::DateTime;
-    solpos::SolarPosition=spa(datetime),
-    extraterrestial_radiation=extraterrestrial_irradiance_spencer1971(datetime),
-    aod700=0.1,
-    precipitable_water=1.0,
+    solpos::SolarPosition = spa(datetime),
+    extraterrestial_radiation = extraterrestrial_irradiance_spencer1971(datetime),
+    aod700 = 0.1,
+    precipitable_water = 1.0,
 )
     w = max(precipitable_water, 0.2)
 
@@ -119,8 +119,7 @@ function clearsky_simplified_solis(
     I₀₀ = 1.08w^0.0051
     I₀₁ = 0.97w^0.032
     I₀₂ = 0.12w^0.56
-    I₀ = extraterrestial_radiation * 
-         (I₀₀*aod700^2 + I₀₁*aod700 + I₀₀ + 0.071log_scaled_p)
+    I₀ = extraterrestial_radiation * (I₀₀*aod700^2 + I₀₁*aod700 + I₀₀ + 0.071log_scaled_p)
 
     tb₁ = 1.82 + 0.056log_w + 0.0071log_w^2
     tb₀ = 0.33 + 0.045log_w + 0.0096log_w^2
@@ -154,18 +153,17 @@ function clearsky_simplified_solis(
         tdₚ = -0.71(1.0 + aod700)^(-15.0)
     end
 
-    τd = td₄*aod700^4 + td₃*aod700^3 + td₂*aod700^2 +
-         td₁*aod700 + td₀ + tdₚ*log_scaled_p
-    
+    τd = td₄*aod700^4 + td₃*aod700^3 + td₂*aod700^2 + td₁*aod700 + td₀ + tdₚ*log_scaled_p
+
     dₚ = 1 / (18.0 + 152.0aod700)
     d = -0.337aod700^2 + 0.63aod700 + 0.116 + dₚ*log_scaled_p
-    
+
     # this prevents the creation of nans at night instead of 0s
     sin_elev = max(1.0e-30, sind(solpos.apparent_elevation))
-    
+
     dni = I₀ * exp(-τb / sin_elev^b)
     ghi = I₀ * exp(-τg / sin_elev^g) * sin_elev
     dhi = I₀ * exp(-τd / sin_elev^d)
-    
+
     return Irradiance(dni, dhi, ghi)
 end

@@ -45,7 +45,7 @@ sunray(azimuth, apparent_elevation) = [
     sind(solpos.azimuth) * cosd(solpos.apparent_elevation)
     cosd(solpos.azimuth) * cosd(solpos.apparent_elevation)
     sind(solpos.apparent_elevation)
-] 
+]
 
 # Limits an angle (in degrees) between 0° and 360°
 mod360(angle) = mod(angle, 360)
@@ -65,35 +65,33 @@ function delta_T(month::Int, year::Int)
     y = year + (month - 0.5) / 12
 
     if year < -500
-            return -20 + 32((y - 1820) / 100)^2
+        return -20 + 32((y - 1820) / 100)^2
     elseif -500 <= year < 500
         t = y / 100
-        return 10583.6 - 1014.41t + 33.78311t^2 - 5.952053t^3 -
-               0.1798452t^4 + 0.022174192t^5 + 0.0090316521t^6
+        return 10583.6 - 1014.41t + 33.78311t^2 - 5.952053t^3 - 0.1798452t^4 +
+               0.022174192t^5 +
+               0.0090316521t^6
     elseif 500 <= year < 1600
         t = (y - 1000) / 100
-        return 1574.2 - 556.01t + 71.23472t^2 + 0.319781t^3 -
-               0.8503463t^4 - 0.005050998t^5 + 0.0083572073t^6
+        return 1574.2 - 556.01t + 71.23472t^2 + 0.319781t^3 - 0.8503463t^4 -
+               0.005050998t^5 + 0.0083572073t^6
     elseif 1600 <= year < 1700
         t = y - 1600
         return 120 - 0.9808t - 0.01532t^2 + t^3 / 7129
     elseif 1700 <= year < 1800
         t = y - 1700
         return 8.83 + 0.1603t - 0.0059285t^2 + 0.00013336t^3
-               t^4 / 1174000
+        t^4 / 1174000
     elseif 1800 <= year < 1860
         t = y - 1800
-        return 13.72 - 0.332447t + 0.0068612t^2 + 0.0041116t^3 -
-               0.00037436t^4 + 0.0000121272t^5 - 0.0000001699t^6 + 
-               0.000000000875t^7
+        return 13.72 - 0.332447t + 0.0068612t^2 + 0.0041116t^3 - 0.00037436t^4 +
+               0.0000121272t^5 - 0.0000001699t^6 + 0.000000000875t^7
     elseif 1860 <= year < 1900
         t = y - 1860
-        return 7.62 + 0.5737t - 0.251754t^2 + 0.01680668t^3 - 
-               0.0004473624t^4 + t^5 / 233174
+        return 7.62 + 0.5737t - 0.251754t^2 + 0.01680668t^3 - 0.0004473624t^4 + t^5 / 233174
     elseif 1900 <= year < 1920
         t = y - 1900
-        return -2.79 + 1.494119t - 0.0598939*t^2 + 0.0061966*t^3 - 
-                0.000197*t^4
+        return -2.79 + 1.494119t - 0.0598939*t^2 + 0.0061966*t^3 - 0.000197*t^4
     elseif 1920 <= year < 1941
         t = y - 1920
         return 21.20 + 0.84493t - 0.076100t^2 + 0.0020936t^3
@@ -105,8 +103,10 @@ function delta_T(month::Int, year::Int)
         return 45.45 + 1.067t - t^2 / 260 - t^3 / 718
     elseif 1986 <= year < 2005
         t = y - 2000
-        return 63.86 + 0.3345t - 0.060374t^2 + 0.0017275t^3 + 
-               0.000651814t^4 + 0.00002373599t^5
+        return 63.86 + 0.3345t - 0.060374t^2 +
+               0.0017275t^3 +
+               0.000651814t^4 +
+               0.00002373599t^5
     elseif 2005 <= year < 2050
         t = y - 2000
         return 62.92 + 0.32217t + 0.005589t^2
@@ -121,7 +121,7 @@ end
     julian_ephemeris_day(julian_day, ΔT)
 
 A continuous count of days measured in uniform Ephemeris Time (or its successors).
-""" 
+"""
 julian_ephemeris_day(julian_day, ΔT) = julian_day + ΔT / 86400.0
 
 """
@@ -138,7 +138,8 @@ julian_century(julian_day) = (julian_day - 2451545.0) / 36525.0
 A 36,525-day interval measured specifically in Ephemeris Time (or its modern dynamical time
 scales) for high-precision astronomical modeling. 
 """
-julian_ephemeris_century(julian_ephemeris_day) = (julian_ephemeris_day − 2451545.0) / 36525.0
+julian_ephemeris_century(julian_ephemeris_day) =
+    (julian_ephemeris_day − 2451545.0) / 36525.0
 
 """
     julian_ephemeris_millenium(julian_ephemeris_century)
@@ -149,15 +150,16 @@ long-term astronomical calculations.
 julian_ephemeris_millenium(julian_ephemeris_century) = julian_ephemeris_century / 10.0
 
 """
-    heliocentric_polynomial(julian_ephemeris_millenium, coefficients::AbstractVector)
+    heliocentric_polynomial(julian_ephemeris_millenium, coefficients)
 
 Polynomial approximation for the heliocentric longitude, latitude, radius.
 """
-function heliocentric_polynomial(julian_ephemeris_millenium, coefficients::AbstractVector)
+function heliocentric_polynomial(julian_ephemeris_millenium, coefficients)
     polynomial = 0
-    jem = julian_ephemeris_millenium
     for (i, C) in enumerate(coefficients)
-        polynomial += sum(C[:, 1] .* cos.(C[:, 2] .+ C[:, 3] .* jem)) * jem^(i - 1)
+        polynomial +=
+            sum(C[:, 1] .* cos.(C[:, 2] .+ C[:, 3] .* julian_ephemeris_millenium)) *
+            julian_ephemeris_millenium^(i - 1)
     end
     return polynomial / 1e8
 end
@@ -225,9 +227,10 @@ relative to Earth’s ellipsoid rather than its rotational axis.
 function geocentric_sun_ascension(
     apparent_sun_longitude,
     elliptic_obliquity,
-    geocentric_latitude
+    geocentric_latitude,
 )
-    s = sind(apparent_sun_longitude) * cosd(elliptic_obliquity) -
+    s =
+        sind(apparent_sun_longitude) * cosd(elliptic_obliquity) -
         tand(geocentric_latitude) * sind(elliptic_obliquity)
     c = cosd(apparent_sun_longitude)
 
@@ -251,7 +254,7 @@ function geocentric_sun_declination(
 )
     return asind(
         sind(geocentric_latitude) * cosd(elliptic_obliquity) +
-        cosd(geocentric_latitude) * sind(elliptic_obliquity) * sind(apparent_sun_longitude)
+        cosd(geocentric_latitude) * sind(elliptic_obliquity) * sind(apparent_sun_longitude),
     )
 end
 
@@ -321,7 +324,7 @@ function nutation_coefficients(julian_ephemeris_century)
         mean_sun_anomaly(julian_ephemeris_century),
         mean_moon_anomaly(julian_ephemeris_century),
         moon_latitude_argument(julian_ephemeris_century),
-        ascending_moon_longitude(julian_ephemeris_century)
+        ascending_moon_longitude(julian_ephemeris_century),
     ]
     return EARTH_PERIODIC_TERMS.Y * X
 end
@@ -360,8 +363,11 @@ unperturbed elliptical Earth orbit.
 """
 function mean_elliptic_obliquity(julian_ephemeris_millenium)
     U = julian_ephemeris_millenium / 10.0
-    return 84381.448 − 4680.93U − 155.0U^2 + 1999.25U^3 − 51.38U^4 − 
-           249.67U^5 − 39.05U^6 + 7.12U^7 + 27.87U^8 + 5.79U^9 + 2.45U^10
+    return 84381.448 − 4680.93U − 155.0U^2 + 1999.25U^3 − 51.38U^4 − 249.67U^5 − 39.05U^6 +
+           7.12U^7 +
+           27.87U^8 +
+           5.79U^9 +
+           2.45U^10
 end
 
 """
@@ -390,7 +396,7 @@ The Sun’s ecliptic longitude after applying corrections for nutation and aberr
 function apparent_sun_longitude(
     geocentric_longitude,
     nutation_longitude,
-    aberration_correction
+    aberration_correction,
 )
     return geocentric_longitude + nutation_longitude + aberration_correction
 end
@@ -403,8 +409,7 @@ ecliptic.
 """
 function mean_sun_longitude(julian_ephemeris_millenium)
     jem = julian_ephemeris_millenium
-    return 280.4664567 + 360007.6982779jem + 
-           0.03032028jem^2 + jem^3 / 49931 -
+    return 280.4664567 + 360007.6982779jem + 0.03032028jem^2 + jem^3 / 49931 -
            jem^4 / 15300 - jem^5 / 2000000
 end
 
@@ -414,10 +419,11 @@ end
 The hour angle of the mean vernal equinox at the Greenwich meridian reflecting Earth’s 
 rotation relative to the fixed stars without nutation effects. 
 """
-function mean_sidereal_greenwich_time(julian_day, julian_century) 
+function mean_sidereal_greenwich_time(julian_day, julian_century)
     return mod360(
-        280.46061837 + 360.98564736629 * (julian_day − 2451545.0) + 
-        0.000387933julian_century^2 - julian_century^3 / 38710000.0
+        280.46061837 +
+        360.98564736629 * (julian_day − 2451545.0) +
+        0.000387933julian_century^2 - julian_century^3 / 38710000.0,
     )
 end
 
@@ -433,8 +439,8 @@ angle relative to the apparent equinox.
 """
 function apparent_sidereal_greenwich_time(
     mean_sidereal_greenwich_time,
-    nutation_longitude, 
-    elliptic_obliquity
+    nutation_longitude,
+    elliptic_obliquity,
 )
     return mean_sidereal_greenwich_time + nutation_longitude * cosd(elliptic_obliquity)
 end
@@ -450,14 +456,12 @@ The angle between the observer’s local meridian and a celestial object measure
 the celestial sphere. 
 """
 function observer_local_hour(
-    observer_longitude, 
-    apparent_sidereal_greenwich_time, 
-    geocentric_sun_ascension
+    observer_longitude,
+    apparent_sidereal_greenwich_time,
+    geocentric_sun_ascension,
 )
     return mod360(
-        apparent_sidereal_greenwich_time + 
-        observer_longitude - 
-        geocentric_sun_ascension
+        apparent_sidereal_greenwich_time + observer_longitude - geocentric_sun_ascension,
     )
 end
 
@@ -482,9 +486,9 @@ The perpendicular distance of a point from Earth’s equatorial plane.
 function radial_distance_equatorial_plane(
     observer_latitude,
     observer_altitude,
-    reduced_observer_latitude
+    reduced_observer_latitude,
 )
-    return cosd(reduced_observer_latitude) + 
+    return cosd(reduced_observer_latitude) +
            observer_altitude * cosd(observer_latitude) / 6378140.0
 end
 
@@ -498,11 +502,11 @@ end
 The perpendicular distance of a point from Earth’s spin axis. 
 """
 function radial_distance_rotational_axis(
-    observer_latitude, 
+    observer_latitude,
     observer_altitude,
-    reduced_observer_latitude
+    reduced_observer_latitude,
 )
-    return 0.99664719sind(reduced_observer_latitude) + 
+    return 0.99664719sind(reduced_observer_latitude) +
            observer_altitude * sind(observer_latitude) / 6378140.0
 end
 
@@ -528,17 +532,19 @@ The correction to the Sun’s right ascension due to the difference between geoc
 topocentric perspectives. 
 """
 function sun_ascension_parallax(
-    radial_distance_equatorial_plane, 
-    sun_equatorial_horizontal_parallax, 
-    geocentric_sun_declination, 
-    observer_local_hour
+    radial_distance_equatorial_plane,
+    sun_equatorial_horizontal_parallax,
+    geocentric_sun_declination,
+    observer_local_hour,
 )
-    s = -radial_distance_equatorial_plane * 
-         sind(sun_equatorial_horizontal_parallax) * 
-         sind(observer_local_hour)
-    c = cosd(geocentric_sun_declination) - 
-        radial_distance_equatorial_plane * 
-        sind(sun_equatorial_horizontal_parallax) * 
+    s =
+        -radial_distance_equatorial_plane *
+        sind(sun_equatorial_horizontal_parallax) *
+        sind(observer_local_hour)
+    c =
+        cosd(geocentric_sun_declination) -
+        radial_distance_equatorial_plane *
+        sind(sun_equatorial_horizontal_parallax) *
         cosd(observer_local_hour)
     return atand(s, c)
 end
@@ -548,10 +554,7 @@ end
 
 The Sun’s right ascension as viewed from the observer’s actual location on Earth’s surface. 
 """
-function topocentric_sun_ascension(
-    geocentric_sun_ascension, 
-    sun_ascension_parallax
-)
+function topocentric_sun_ascension(geocentric_sun_ascension, sun_ascension_parallax)
     return geocentric_sun_ascension + sun_ascension_parallax
 end
 
@@ -578,20 +581,22 @@ end
 The Sun’s declination as viewed from the observer’s actual location on Earth’s surface. 
 """
 function topocentric_sun_declination(
-    radial_distance_equatorial_plane, 
-    radial_distance_rotational_axis, 
-    sun_equatorial_horizontal_parallax, 
-    geocentric_sun_declination, 
-    observer_local_hour, 
-    sun_ascension_parallax
+    radial_distance_equatorial_plane,
+    radial_distance_rotational_axis,
+    sun_equatorial_horizontal_parallax,
+    geocentric_sun_declination,
+    observer_local_hour,
+    sun_ascension_parallax,
 )
-    s = cosd(sun_ascension_parallax) * (
-            sind(geocentric_sun_declination) - 
+    s =
+        cosd(sun_ascension_parallax) * (
+            sind(geocentric_sun_declination) -
             radial_distance_rotational_axis * sind(sun_equatorial_horizontal_parallax)
         )
-    c = cosd(geocentric_sun_declination) - 
-        radial_distance_equatorial_plane * 
-        sind(sun_equatorial_horizontal_parallax) * 
+    c =
+        cosd(geocentric_sun_declination) -
+        radial_distance_equatorial_plane *
+        sind(sun_equatorial_horizontal_parallax) *
         cosd(observer_local_hour)
     return atand(s, c)
 end
@@ -608,10 +613,12 @@ Topocentric elevation angle without atmospheric refraction correction.
 function topocentric_apparent_elevation(
     observer_latitude,
     topocentric_sun_declination,
-    topocentric_local_hour
+    topocentric_local_hour,
 )
     s = sind(observer_latitude) * sind(topocentric_sun_declination)
-    c = cosd(observer_latitude) * cosd(topocentric_sun_declination) * 
+    c =
+        cosd(observer_latitude) *
+        cosd(topocentric_sun_declination) *
         cosd(topocentric_local_hour)
     return asind(s + c)
 end
@@ -629,12 +636,11 @@ light as it passes through Earth’s atmosphere.
 function topocentric_elevation_correction(
     temperature,
     pressure,
-    topocentric_apparent_elevation
+    topocentric_apparent_elevation,
 )
     tae = topocentric_apparent_elevation
-    return 283.0 * 1.02pressure / (
-                1010.0(273 + temperature) * (60tand(tae + 10.3 / (tae + 5.11)))
-           )
+    return 283.0 * 1.02pressure /
+           (1010.0(273 + temperature) * (60tand(tae + 10.3 / (tae + 5.11))))
 end
 
 """
@@ -644,8 +650,8 @@ The angle between the Sun and the observer’s local horizon, measured at the ob
 location. 
 """
 function topocentric_elevation(
-    topocentric_apparent_elevation, 
-    topocentric_elevation_correction
+    topocentric_apparent_elevation,
+    topocentric_elevation_correction,
 )
     return topocentric_elevation_correction + topocentric_apparent_elevation
 end
@@ -661,12 +667,13 @@ The Sun’s azimuth measured from true north eastward as seen from the observer�
 based on astronomical (not navigational) convention. 
 """
 function topocentric_astronomical_azimuth(
-    observer_latitude, 
-    topocentric_sun_declination, 
-    topocentric_local_hour
+    observer_latitude,
+    topocentric_sun_declination,
+    topocentric_local_hour,
 )
     s = sind(topocentric_local_hour)
-    c = cosd(topocentric_local_hour) * sind(observer_latitude) - 
+    c =
+        cosd(topocentric_local_hour) * sind(observer_latitude) -
         tand(topocentric_sun_declination) * cosd(observer_latitude)
     return mod360(atand(s, c))
 end
@@ -721,21 +728,15 @@ function spa(location::Location, datetime::DateTime)
 
     obs_local_hr = observer_local_hour(location.longitude, app_sid_gw_time, geo_sun_asc)
     red_obs_lat = reduced_observer_latitude(location.latitude)
-    rad_dist_eq_plane = radial_distance_equatorial_plane(
-        location.latitude,
-        location.altitude,
-        red_obs_lat,
-    )
+    rad_dist_eq_plane =
+        radial_distance_equatorial_plane(location.latitude, location.altitude, red_obs_lat)
 
-    rad_dist_rot_axis = radial_distance_rotational_axis(
-        location.latitude,
-        location.altitude,
-        red_obs_lat,
-    )
+    rad_dist_rot_axis =
+        radial_distance_rotational_axis(location.latitude, location.altitude, red_obs_lat)
 
     sun_eq_horiz_px = sun_equatorial_horizontal_parallax(hel_radius)
     sun_asc_px = sun_ascension_parallax(
-        rad_dist_eq_plane, 
+        rad_dist_eq_plane,
         sun_eq_horiz_px,
         geo_sun_dec,
         obs_local_hr,
@@ -752,11 +753,8 @@ function spa(location::Location, datetime::DateTime)
         sun_asc_px,
     )
 
-    top_app_elev = topocentric_apparent_elevation(
-        location.latitude, 
-        top_sun_dec, 
-        top_local_hr,
-    )
+    top_app_elev =
+        topocentric_apparent_elevation(location.latitude, top_sun_dec, top_local_hr)
 
     top_elev_corr = topocentric_elevation_correction(
         location.temperature,
@@ -765,11 +763,8 @@ function spa(location::Location, datetime::DateTime)
     )
 
     top_elev = topocentric_elevation(top_app_elev, top_elev_corr)
-    top_astr_azimuth = topocentric_astronomical_azimuth(
-        location.latitude,
-        top_sun_dec,
-        top_local_hr,
-    )
+    top_astr_azimuth =
+        topocentric_astronomical_azimuth(location.latitude, top_sun_dec, top_local_hr)
     top_azimuth = topocentric_azimuth(top_astr_azimuth)
 
     top_azimuth, top_elev, top_app_elev = promote(top_azimuth, top_elev, top_app_elev)

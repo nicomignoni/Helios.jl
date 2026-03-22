@@ -10,7 +10,7 @@ using Pkg.Artifacts, Serialization
 # http://www.meteonorm.com/images/uploads/downloads/ieashc36_report_TL_AOD_climatologies.pdf
 # 1st row: 89.9583 S, 2nd row: 89.875 S
 # 1st column: 179.9583 m^2, 2nd column: 179.875 m^2
-const LINKE_TURBIDITY_METEOTEST = open(artifact"data/linke-turbidity.jld", "r") do io;
+const LINKE_TURBIDITY_METEOTEST = open(artifact"data/linke-turbidity.jld", "r") do io
     deserialize(io)
 end
 
@@ -42,12 +42,11 @@ longitudes, and depth (third dimension) represents months of the year.
 """
 function linke_turbidity_meteotest(location::Location, datetime::DateTime)
     lt = interpolated_value(
-            LINKE_TURBIDITY_METEOTEST, 
-            location.latitude, 
-            location.longitude,
-            month(datetime)
-        )
-
+        LINKE_TURBIDITY_METEOTEST,
+        location.latitude,
+        location.longitude,
+        month(datetime),
+    )
     # The values within the Linke turbidity array are scaled by 20
     return lt / 20
 end
@@ -67,8 +66,8 @@ these calculations are only valid for `absolute_airmass` less than 5 and
 function linke_turbidity_kasten1996(absolute_airmass, precipitable_water, aod_bb)
     δ_cda = -0.101 + 0.235absolute_airmass^(-0.16)
     δ_w = 0.112absolute_airmass^(-0.55) * precipitable_water^0.34
-    return -(9.4 + 0.9absolute_airmass) * 
-            log(exp(-absolute_airmass * (δ_cda + δ_w + aod_bb))) / absolute_airmass
+    return -(9.4 + 0.9absolute_airmass) *
+           log(exp(-absolute_airmass * (δ_cda + δ_w + aod_bb))) / absolute_airmass
 end
 
 """
@@ -108,7 +107,6 @@ function absolute_airmass(relative_airmass, pressure)
     return relative_airmass * pressure / ATMOSPHERIC_PRESSURE
 end
 
-# Relative airmass ------------------------------------------------------------------------
 """
     relative_airmass_simple(solpos::SolarPosition)
 
@@ -125,8 +123,7 @@ Computes the relative airmass as proposed in [kasten1965new](@cite).
 """
 function relative_airmass_kasten1966(solpos::SolarPosition)
     app_zenith = apparent_zenith(solpos)
-    return 1.0 / (cosd(app_zenith) + 
-           0.15((93.885 - app_zenith)^(- 1.253)))
+    return 1.0 / (cosd(app_zenith) + 0.15((93.885 - app_zenith)^(- 1.253)))
 end
 
 """
@@ -157,8 +154,8 @@ Computes the relative airmass as proposed in
 """
 function relative_airmass_gueymard1993(solpos::SolarPosition)
     app_zenith = apparent_zenith(solpos)
-    return 1.0 / (cosd(app_zenith) + 0.00176759app_zenith*
-           ((94.37515 - app_zenith)^(-1.21563)))
+    return 1.0 /
+           (cosd(app_zenith) + 0.00176759app_zenith * ((94.37515 - app_zenith)^(-1.21563)))
 end
 
 """
@@ -169,8 +166,7 @@ Computes the relative airmass as proposed in [young1994air](@cite).
 function relative_airmass_young1994(solpos::SolarPosition)
     cos_zenith = cosd(zenith(solpos))
     return (1.002432cos_zenith^2 + 0.148386cos_zenith + 0.0096467) /
-           (cosd_zenith^3 + 0.149864cosd_zenith^2 + 
-            0.0102963cosd_zenith + 0.000303978)
+           (cosd_zenith^3 + 0.149864cosd_zenith^2 + 0.0102963cosd_zenith + 0.000303978)
 end
 
 """
@@ -190,10 +186,10 @@ Computes the relative airmass as proposed in [gueymard2003direct, gueymard2019cl
 """
 function relative_airmass_gueymard2003(solpos::SolarPosition)
     app_zenith = apparent_zenith(solpos)
-    return 1.0 / (cosd(app_zenith) + 0.48353app_zenith^0.095846 / (96.741 - app_zenith)^1.754)
+    return 1.0 /
+           (cosd(app_zenith) + 0.48353app_zenith^0.095846 / (96.741 - app_zenith)^1.754)
 end
 
-# Vapor -----------------------------------------------------------------------------------
 """
     apparent_vapor_scale_height_gueymard94(air_temperature)
 
@@ -217,11 +213,11 @@ Computes the surface water vapor density [g/m³] as proposed in
 [gueymard1994analysis; Eq. 2](@cite).
 """
 function surface_vapor_density_gueymard94(
-    air_temperature, 
+    air_temperature,
     relative_humidity,
-    apparent_vapor_scale_height
+    apparent_vapor_scale_height,
 )
-    return 216.7relative_humidity * apparent_vapor_scale_height / air_temperature 
+    return 216.7relative_humidity * apparent_vapor_scale_height / air_temperature
 end
 
 """
@@ -232,8 +228,7 @@ Computes the saturation water vapor pressure [mbar] as proposed in
 """
 function saturation_vapor_pressure_gueymard93(air_temperature)
     T_kelvin = air_temperature + ABSOLUTE_ZERO
-    return exp(22.330 - 49.140(100/T_kelvin) - 10.922(100/T_kelvin)^2 - 
-               0.39015T_kelvin/100)
+    return exp(22.330 - 49.140(100/T_kelvin) - 10.922(100/T_kelvin)^2 - 0.39015T_kelvin/100)
 end
 
 """
@@ -242,7 +237,7 @@ end
 Computes the saturation water vapor pressure [mbar] as proposed in [oke2018guide](@cite).
 """
 function saturation_vapor_pressure_oke2018(dew_temperature)
-    return 6.112exp(17.62dew_temperature / (243.12 + dew_temperature)) 
+    return 6.112exp(17.62dew_temperature / (243.12 + dew_temperature))
 end
 
 """
@@ -254,7 +249,6 @@ function vapor_pressure_oke2018(air_temperature)
     return 6.112exp(17.62air_temperature / (243.12 + air_temperature))
 end
 
-# Precipitable water and humidity ---------------------------------------------------------
 """
     precipitable_water_gueymard94(saturation_vapor_pressure, surface_vapor_density)
 
@@ -263,10 +257,7 @@ Computes precipitable water [cm] as proposed in [gueymard1994analysis; Eq. 1](@c
 The accuracy of this method is approximately 20% for moderate precipitable water (1-3 cm) 
 and less accurate otherwise. 
 """
-function precipitable_water_gueymard94(
-    saturation_vapor_pressure,
-    surface_vapor_density
-)
+function precipitable_water_gueymard94(saturation_vapor_pressure, surface_vapor_density)
     return max(0.1saturation_vapor_pressure * surface_vapor_density, 0.1)
 end
 
